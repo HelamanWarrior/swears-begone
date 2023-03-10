@@ -28,7 +28,7 @@ pip3 install matplotlib
 
 ## Usage
 
-```bash
+```
 usage: ./clean-video <input video>
 ```
 

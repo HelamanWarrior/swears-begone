@@ -26,6 +26,12 @@ pip3 install git+https://github.com/linto-ai/whisper-timestamped
 pip3 install matplotlib
 ```
 
+## Usage
+
+```bash
+usage: ./clean-video <input video>
+```
+
 ## Potential drawbacks
 
 1. Audio is converted to AAC 
@@ -39,3 +45,4 @@ pip3 install matplotlib
     - Makes the script take longer to complete.
 
 Feel free to improve the project, to help remove these drawbacks.
+

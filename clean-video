@@ -8,13 +8,6 @@ cleanvid -i compatible-video.mp4 -s audio.aac.words.srt -p 0 -a '-c:a aac -b:a 6
 
 rm compatible-video.mp4
 
-# another pass (uncomment if you want potentially higher accuracy)
-#ffmpeg -y -i pass-1.mp4 -c:v none -c:a copy audio.aac
-#whisper_timestamped audio.aac --model small.en --language en --accurate --output_format srt --output_dir .
-#cleanvid -i pass-1.mp4 -s audio.aac.words.srt -p 0 -a '-c:a aac -b:a 640k' -o pass-2.mp4
-
-#rm pass-1.mp4
-
 # try mono audio (seems like stereo/surround sound may mess up the detection)
 ffmpeg -y -i pass-1.mp4 -c:v none -b:a 640k -ac 1 audio.aac
 whisper_timestamped audio.aac --model small.en --language en --accurate --output_format srt --output_dir .

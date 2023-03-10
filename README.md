@@ -1,4 +1,4 @@
-# Swares Begone
+# Swears Begone
 
 A small shell script that mutes profanity from video files.
 

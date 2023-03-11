@@ -16,9 +16,9 @@ cleanvid -i pass-1.mp4 -s audio.aac.words.srt -p 0 -a '-c:a aac -b:a 640k' -o pa
 rm pass-1.mp4
 
 # try mono audio (seems like stereo/surround sound may mess up the detection)
-ffmpeg -y -i pass-1.mp4 -c:v none -b:a 640k -ac 1 audio.aac
+ffmpeg -y -i pass-2.mp4 -c:v none -b:a 640k -ac 1 audio.aac
 whisper_timestamped audio.aac --model medium.en --language en --accurate --output_format srt --output_dir .
 cleanvid -i pass-1.mp4 -s audio.aac.words.srt -p 0 -a '-c:a aac -b:a 640k' -o "${1%.*}-clean.mp4"
 
 # remove unused files
-rm audio.aac.srt audio.aac.words.srt audio.aac.words_clean.srt audio.aac pass-1.mp4
+rm audio.aac.srt audio.aac.words.srt audio.aac.words_clean.srt audio.aac pass-2.mp4

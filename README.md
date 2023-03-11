@@ -1,4 +1,4 @@
-# Swares Begone
+# Swears Begone
 
 A small shell script that mutes profanity from video files.
 
@@ -28,7 +28,7 @@ pip3 install matplotlib
 
 ## Usage
 
-```bash
+```
 usage: ./clean-video <input video>
 ```
 

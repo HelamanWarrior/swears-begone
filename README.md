@@ -23,7 +23,6 @@ Install `whisper-timestamped`
 
 ```bash
 pip3 install git+https://github.com/linto-ai/whisper-timestamped
-pip3 install matplotlib
 ```
 
 ## Usage

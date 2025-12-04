@@ -1,47 +1,36 @@
 # Swears Begone
 
-A small shell script that mutes profanity from video files.
+A small shell script that automatically detects and mutes profanity in video files.
 
-This script requires [cleanvid](https://github.com/mmguero/cleanvid) & [whisper-timestamped](https://github.com/linto-ai/whisper-timestamped).
-Huge thanks to all the work that's gone into these amazing projects.
+The script relies on a dockerized version of [whisper-timestamped](https://github.com/linto-ai/whisper-timestamped), which provides accurate per-word timestamps.
 
-## Description
-
-This script utilizes a modified version of OpenAI whispered that can generate timestamps between each word.
-It outputs a subtitle `srt` file which is sent to `cleanvid` that handles muting the profanity.
-By utilizing the timestamps created by `whisper-timestamped` cleanvid can find the exact location cursing is present and mute the word.
+## How it Works
+1. The script runs a modified version of OpenAI Whisper (via whisper-timestamped) to generate word-level timestamps.
+2. It outputs an .srt subtitle file containing each word and its timing.
+3. An ffmpeg command is generated muting the audio segments that contain profanity found in the word-level .srt file.
+4. Multiple passes are ran to ensure that as much profanity is cleaned as currently possible.
+5. The result is a new video file with profanity muted while preserving the original video and audio codecs.
 
 ## Installation
 
-Install `cleanvid`
+You can build the `whisper_timestamped` image using the included Dockerfile:
 
 ```bash
-python3 -m pip install -U cleanvid
+docker build -t whisper_timestamped:latest .
 ```
 
-Install `whisper-timestamped`
-
-```bash
-pip3 install git+https://github.com/linto-ai/whisper-timestamped
-```
+If you prefer not to use Docker, you may modify the script to call your local installation of whisper-timestamped directly.
 
 ## Usage
 
 ```
-usage: ./clean-video <input video>
+./clean_video.sh <path/to/inputvideo>
 ```
 
-## Potential drawbacks
-
-1. Audio is converted to AAC 
-    - This ensures that the audio can be used in the final container & ensures ffmpeg knows which container to extract the audio to.
-    - High bitrate is used to avoid compression artifacts.
-    - Surround sound channels are preserved.
-2. Final video is forced to utilize the `.mp4` container
-    - Timestamp issues occur when exporting to `.mkv`. Otherwise this container would be used instead.
-3. Multiple passes
-    - Used to ensure accuracy. 
-    - Makes the script take longer to complete.
-
-Feel free to improve the project, to help remove these drawbacks.
-
+After the script completes, check the directory containing your input video.
+You’ll find two new files, and the original video will be moved into the unclean/ directory:
+- unclean/<inputvideo>.mkv
+- <inputvideo>[swears-cleaned].mkv
+- <inputvideo>[swears-cleaned].txt
+The .txt file contains the full ffmpeg command used to mute the detected profanity.
+You can reuse this command later if you download or re-encode the video and want to mute the same segments again.

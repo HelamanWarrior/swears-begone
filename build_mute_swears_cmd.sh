@@ -21,6 +21,10 @@ while [[ $# -gt 0 ]]; do
       INPUT="$2"
       shift 2
       ;;
+    -s|--swears)
+      SWEARS="$2"
+      shift 2
+      ;;
     -ao|--audio-only)
       AUDIO_ONLY=true 
       shift

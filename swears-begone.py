@@ -4,6 +4,8 @@ import json
 
 LANGUAGE = "eng"
 SWEARS_FILE = "swears.txt"
+WHISPER_MODEL = "medium.en"
+WHISPER_DEVICE = "cuda"
 
 def extract_center_channel(input_video, output_audio):
     cmd = [
@@ -67,7 +69,32 @@ def parse_swears_list(input_file):
             swears_list.append(swear_array)
     return swears_list
 
+def transcribe_wordlevel_audio(audio_file, model):
+    audio = whisper.load_audio(audio_file)
+    result = whisper.transcribe(model, audio, language=LANGUAGE[:-1])
+    return result
+
+def parse_word_timestamps(transcription_json):
+    word_timestamps = []
+
+    for segment in transcription_json["segments"]:
+        for word in segment.get("words", []):
+            word_timestamps.append({
+                "word": word["text"],
+                "start": word["start"],
+                "end": word["end"],
+                "confidence": word["confidence"]
+            })
+    
+    return word_timestamps
+
 swears_list = parse_swears_list(SWEARS_FILE)
-extract_embedded_subs("example.mkv", "output.srt")
+#extract_center_channel("example.mkv", "dialogue.wav")
+
+model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)
+transcript = transcribe_wordlevel_audio("dialogue.wav", model)
+print(parse_word_timestamps(transcript))
+
+#extract_embedded_subs("example.mkv", "output.srt")
 #extract_center_channel("example.mkv", "dialogue.wav")
 #help(whisper.transcribe)

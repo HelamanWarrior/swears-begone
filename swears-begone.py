@@ -33,20 +33,28 @@ def identify_dialogue_subs_channel(input_video):
 
     try:
         streams = video_info['streams']
-        print(streams)
+        preferred_lang_index = 0
+
+        for stream in streams:
+            if stream['tags']['language'] == LANGUAGE:
+                preferred_lang_index = stream['index']
+                return preferred_lang_index
     except KeyError:
         print("No subtitle streams were found")
+        return None
 
 def extract_embedded_subs(input_video, output_srt):
-    #identify_dialogue_subs_channel()
+    sub_channel = identify_dialogue_subs_channel(input_video)
+
+    if sub_channel == None:
+        print("No subtitle channel found for perferred language:" + LANGUAGE)
+        return
 
     cmd = [
         "ffmpeg",
         "-y",
         "-i", input_video,
-        "-map", "0:m:language:eng",
-        "-map", "-0:v",
-        "-map", "-0:a",
+        "-map", "0:" + str(sub_channel),
         output_srt
     ]
     subprocess.run(cmd, check=True)
@@ -60,6 +68,6 @@ def parse_swears_list(input_file):
     return swears_list
 
 swears_list = parse_swears_list(SWEARS_FILE)
-identify_dialogue_subs_channel("example.mkv")
+extract_embedded_subs("example.mkv", "output.srt")
 #extract_center_channel("example.mkv", "dialogue.wav")
 #help(whisper.transcribe)

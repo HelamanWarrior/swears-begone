@@ -1,11 +1,35 @@
 import whisper_timestamped as whisper
 import subprocess
 import json
+import re
 
 LANGUAGE = "eng"
 SWEARS_FILE = "swears.txt"
 WHISPER_MODEL = "medium.en"
 WHISPER_DEVICE = "cuda"
+
+def contains_any(text, items):
+    pattern = r'\b(' + '|'.join(re.escape(item) for item in items) + r')\b'
+    return re.search(pattern, text, re.IGNORECASE) is not None
+
+def detect_audio_codec(input_video):
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries",
+        "stream=codec_name,bit_rate,channels",
+        "-of",
+        "default=noprint_wrappers=1",
+        input_video
+    ]
+    stdout = subprocess.check_output(cmd)
+    audio_info = dict(
+        line.split("=", 1)
+        for line in stdout.decode().strip().split("\n")
+    )
+    print(audio_info)
+    return audio_info
 
 def extract_center_channel(input_video, output_audio):
     cmd = [
@@ -65,7 +89,7 @@ def parse_swears_list(input_file):
     swears_list = []
     with open(input_file, "r") as f:
         for line in f:
-            swear_array = line.strip().split("|")
+            swear_array = line.strip().split("|")[0]
             swears_list.append(swear_array)
     return swears_list
 
@@ -74,15 +98,17 @@ def transcribe_wordlevel_audio(audio_file, model):
     result = whisper.transcribe(model, audio, language=LANGUAGE[:-1])
     return result
 
-def parse_word_timestamps(transcription_json):
+def parse_swear_word_timestamps(transcription_json, swears_list):
     word_timestamps = []
 
     for segment in transcription_json["segments"]:
         for word in segment.get("words", []):
+            if not contains_any(word["text"], swears_list):
+                continue
             word_timestamps.append({
                 "word": word["text"],
-                "start": word["start"],
-                "end": word["end"],
+                "start": float(word["start"]),
+                "end": float(word["end"]),
                 "confidence": word["confidence"]
             })
     
@@ -90,10 +116,12 @@ def parse_word_timestamps(transcription_json):
 
 swears_list = parse_swears_list(SWEARS_FILE)
 #extract_center_channel("example.mkv", "dialogue.wav")
+detect_audio_codec("example.mkv")
 
-model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)
-transcript = transcribe_wordlevel_audio("dialogue.wav", model)
-print(parse_word_timestamps(transcript))
+#model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)
+#transcript = transcribe_wordlevel_audio("dialogue.wav", model)
+
+#print(parse_swear_word_timestamps(transcript, swears_list))
 
 #extract_embedded_subs("example.mkv", "output.srt")
 #extract_center_channel("example.mkv", "dialogue.wav")

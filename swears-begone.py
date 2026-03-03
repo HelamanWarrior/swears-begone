@@ -5,6 +5,7 @@ import whisper_timestamped as whisper
 
 LANGUAGE = "eng"
 SWEARS_FILE = "swears.txt"
+
 WHISPER_MODEL = "medium.en"
 WHISPER_DEVICE = "cuda"
 
@@ -98,7 +99,7 @@ def transcribe_wordlevel_audio(audio_file, model):
     result = whisper.transcribe(model, audio, language=LANGUAGE[:-1])
     return result
 
-def convert_srt_to_ffmpeg_timestamps(timestamp):
+def convert_srt_to_ffmpeg_ts(timestamp):
     """
     00:00:05,799
     """
@@ -107,9 +108,38 @@ def convert_srt_to_ffmpeg_timestamps(timestamp):
     h, m, s, ms = [int(x) for x in time_list]
     total_seconds = (h * 3600) + (m * 60) + s + (ms / 1000)
 
-    print(f"Total Seconds: {total_seconds}")
+    return total_seconds
 
-def parse_swear_word_timestamps(transcription_json, swears_list):
+def get_subtitle_blocks(file):
+    """Yields timestamp and text as a pair."""
+    current_ts = None
+    for line in file:
+        line = line.strip()
+        if "-->" in line:
+            current_ts = [t.strip() for t in line.split("-->")]
+        elif line and current_ts:
+            yield current_ts, line
+
+def detect_swear_ts_in_subs(srt_file, swears_list):
+    file = open(srt_file, "r")
+    
+    swear_timestamps = [ts for ts, text in get_subtitle_blocks(file) if contains_any(text, swears_list)]
+    file.close()
+
+    return swear_timestamps
+
+def convert_swear_srt_ts_to_ffmpeg(swear_ts):
+    ffmpeg_ts = []
+
+    for ts_start, ts_end in swear_ts:
+        ffmpeg_ts_start = convert_srt_to_ffmpeg_ts(ts_start)
+        ffmpeg_ts_end = convert_srt_to_ffmpeg_ts(ts_end)
+        ffmpeg_ts.append([ffmpeg_ts_start, ffmpeg_ts_end])
+    print(ffmpeg_ts)
+    
+    return ffmpeg_ts
+
+def parse_whisper_swear_ts(transcription_json, swears_list):
     word_timestamps = []
 
     for segment in transcription_json["segments"]:
@@ -126,15 +156,17 @@ def parse_swear_word_timestamps(transcription_json, swears_list):
     return word_timestamps
 
 swears_list = parse_swears_list(SWEARS_FILE)
-convert_srt_to_ffmpeg_timestamps("01:20:05,799")
+extract_embedded_subs("example.mkv", "output.srt")
+convert_swear_srt_ts_to_ffmpeg(detect_swear_ts_in_subs("output.srt", swears_list))
+
 #extract_center_channel("example.mkv", "dialogue.wav")
 #detect_audio_codec("example.mkv")
 
 #model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)
 #transcript = transcribe_wordlevel_audio("dialogue.wav", model)
 
-#print(parse_swear_word_timestamps(transcript, swears_list))
+#print(parse_whisper_swear_ts(transcript, swears_list))
 
-#extract_embedded_subs("example.mkv", "output.srt")
+
 #extract_center_channel("example.mkv", "dialogue.wav")
 #help(whisper.transcribe)

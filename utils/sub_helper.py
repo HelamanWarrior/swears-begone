@@ -1,19 +1,11 @@
 import config
 import utils.search as search
+import utils.ffmpeg_helper as ffmpeg
 import json
 import subprocess
 
 def identify_dialogue_subs_channel(input_video):
-    cmd = [
-        "ffprobe",
-        "-v", "error",
-        "-of", "json",
-        input_video,
-        "-of", "json",
-        "-show_entries", "stream=index:stream_tags=language",
-        "-select_streams", "s"
-    ]
-    stdout = subprocess.check_output(cmd)
+    stdout = ffmpeg.ffprobe_subs_channel(input_video)
     video_info = json.loads(stdout)
 
     try:
@@ -35,14 +27,7 @@ def extract_embedded_subs(input_video, output_srt):
         print("No subtitle channel found for perferred language:" + config.LANGUAGE)
         return
 
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", input_video,
-        "-map", "0:" + str(sub_channel),
-        output_srt
-    ]
-    subprocess.run(cmd, check=True)
+    ffmpeg.extract_subtitle_file(input_video, sub_channel, output_srt)
 
 def srt_to_seconds(timestamp):
     """

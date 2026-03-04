@@ -1,47 +1,7 @@
 import config
 import utils.sub_helper as subs_helper
 import utils.search as search
-import json
-import subprocess
 import whisper_timestamped as whisper
-
-LANGUAGE = "eng"
-SWEARS_FILE = "swears.txt"
-
-WHISPER_MODEL = "medium.en"
-WHISPER_DEVICE = "cuda"
-
-def detect_audio_codec(input_video):
-    cmd = [
-        "ffprobe",
-        "-v", "error",
-        "-select_streams", "a:0",
-        "-show_entries",
-        "stream=codec_name,bit_rate,channels",
-        "-of",
-        "default=noprint_wrappers=1",
-        input_video
-    ]
-    stdout = subprocess.check_output(cmd).decode()
-    audio_info = {
-        key: int(value) if value.isdigit() else value
-        for line in stdout.strip().split("\n")
-        for key, value in [line.split("=", 1)]
-    }
-    return audio_info
-
-def extract_center_channel(input_video, output_audio):
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", input_video,
-        "-map", "0:a",
-        "-af", "pan=mono|c0=c2",
-        "-acodec", "pcm_s16le",
-        "-ar", "16000",
-        output_audio
-    ]
-    subprocess.run(cmd, check=True)
 
 def parse_swears_list(input_file):
     swears_list = []
@@ -72,7 +32,7 @@ def parse_whisper_swear_ts(transcription_json, swears_list):
     
     return word_timestamps
 
-swears_list = parse_swears_list(SWEARS_FILE)
+swears_list = parse_swears_list(config.SWEARS_FILE)
 subs_helper.extract_embedded_subs("example.mkv", "output.srt")
 subs_helper.swear_srt_to_seconds(subs_helper.detect_swear_time_in_subs("output.srt", swears_list))
 

@@ -31,7 +31,7 @@ def identify_dialogue_subs_channel(input_video):
 def extract_embedded_subs(input_video, output_srt):
     sub_channel = identify_dialogue_subs_channel(input_video)
 
-    if sub_channel == None:
+    if sub_channel is None:
         print("No subtitle channel found for perferred language:" + config.LANGUAGE)
         return
 
@@ -48,12 +48,10 @@ def srt_to_seconds(timestamp):
     """
     00:00:05,799
     """
-    time_list = timestamp.replace(",", ":").split(":")
+    h, m, s_ms = timestamp.split(':')
+    s, ms = s_ms.split(',')
 
-    h, m, s, ms = [int(x) for x in time_list]
-    total_seconds = (h * 3600) + (m * 60) + s + (ms / 1000)
-
-    return total_seconds
+    return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
 
 def swear_srt_to_seconds(swear_ts):
     ffmpeg_ts = []
@@ -75,11 +73,13 @@ def get_subtitle_blocks(file):
             current_ts = [t.strip() for t in line.split("-->")]
         elif line and current_ts:
             yield current_ts, line
+            currnet_ts = None
 
 def detect_swear_time_in_subs(srt_file, swears_list):
-    file = open(srt_file, "r")
-    
-    swear_timestamps = [ts for ts, text in get_subtitle_blocks(file) if search.contains_any(text, swears_list)]
-    file.close()
+    with open(srt_file, "r") as file:
+        swear_timestamps = [
+            ts for ts, text in get_subtitle_blocks(file) 
+            if search.contains_any(text, swears_list)
+        ]
 
     return swear_timestamps

@@ -74,7 +74,6 @@ def srt_time_interval_to_seconds(interval):
         seconds_start = srt_to_seconds(ts_start)
         seconds_end = srt_to_seconds(ts_end)
         ffmpeg_ts.append([seconds_start, seconds_end])
-    print(ffmpeg_ts)
     
     return ffmpeg_ts
 
@@ -83,21 +82,35 @@ def get_subtitle_blocks(file):
     Given an SRT file, yields a block of the time intervals and text dialogue.
     """
     current_ts = None
+    current_text = []
+
     for line in file:
         line = line.strip()
+
         if "-->" in line:
+            # If we were already tracking a block, yield it before starting new one
+            if current_ts and current_text:
+                yield current_ts, " ".join(current_text)
+            
             current_ts = [t.strip() for t in line.split("-->")]
-        elif line and current_ts:
-            yield current_ts, line
-            current_ts = None
+            current_text = []
+        elif line and line.isdigit():
+            # Skip the index numbers (1, 2, 3...)
+            continue
+        elif line:
+            # Collect lines of dialogue
+            current_text.append(line)
+    
+    # Yield the very last block in the file
+    if current_ts and current_text:
+        yield current_ts, " ".join(current_text)
 
-def detect_swear_time_interval_in_subs(srt_file, swears_list):
+def find_swear_intervals(srt_file, swears_list):
     """
-    Given an SRT file, detects all of the time intervals where swearing is present.
-    Returns a list of lists of those dialogue lines where swearing took place.
+    Locates time intervals in an SRT file containing profanity.
+    Returns a list of [start, end] floats in seconds.
 
-    swears_list (str): path to the swears.txt file. Each line of the file contains an
-    entry for a swear word. This list will determine which words get filtered out.
+    swears_list: a list of swear words (str) to filter out.
 
     Example output:
         [[183.75, 188.62], [273.23, 276.46]]

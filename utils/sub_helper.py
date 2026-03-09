@@ -1,10 +1,16 @@
-import config
+from config import LANGUAGE
 import utils.search as search
 import utils.ffmpeg_helper as ffmpeg
 import json
 import subprocess
 
 def identify_dialogue_subs_channel(input_video):
+    """
+    Given a video (path), identifies the which channel the subtitles are found on.
+    It identifies the first subtitle stream matching the perferred lang config.
+
+    Returns: int (channel number), None (if no compatible subtitle channel found).
+    """
     stdout = ffmpeg.ffprobe_subs_channel(input_video)
     video_info = json.loads(stdout)
 
@@ -13,7 +19,7 @@ def identify_dialogue_subs_channel(input_video):
         preferred_lang_index = 0
 
         for stream in streams:
-            if stream['tags']['language'] == config.LANGUAGE:
+            if stream['tags']['language'] == LANGUAGE:
                 preferred_lang_index = stream['index']
                 return preferred_lang_index
     except KeyError:
@@ -21,27 +27,50 @@ def identify_dialogue_subs_channel(input_video):
         return None
 
 def extract_embedded_subs(input_video, output_srt):
+    """
+    Extracts and writes out the embedded subtitles into an SRT file.
+    Automatically identifies correct subtitles using preferred lang config.
+
+    input_video (str): path to the video to extract subs from.
+    output_srt (str): path to output SRT subtitle file.
+    """
     sub_channel = identify_dialogue_subs_channel(input_video)
 
     if sub_channel is None:
-        print("No subtitle channel found for perferred language:" + config.LANGUAGE)
+        print("No subtitle channel found for perferred language:" + LANGUAGE)
         return
 
     ffmpeg.extract_subtitle_file(input_video, sub_channel, output_srt)
 
 def srt_to_seconds(timestamp):
     """
-    00:00:05,799
+    Converts timestamp (str) from 'HH:MM:SS,mmm' (standard SubRip format) 
+    to total seconds (float).
+
+    >>> srt_to_seconds("01:26:02,773")
+    5162.773
     """
     h, m, s_ms = timestamp.split(':')
     s, ms = s_ms.split(',')
 
     return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
 
-def swear_srt_to_seconds(swear_ts):
+def srt_time_interval_to_seconds(interval):
+    """
+    Converts a list of SRT timecode pairs into a list of float intervals in seconds.
+
+    The input format is expected to be 'HH:MM:SS,mmm' (standard SubRip).
+    Each timestamp is converted to its total elapsed time in seconds.
+
+    >>> srt_time_interval_to_seconds([
+    ...    ['00:00:17,770', '00:00:18,938'], 
+    ...    ['00:00:42,127', '00:00:43,921']
+    ... ])
+    [[17.77, 18.938], [42.127, 43.921]]
+    """
     ffmpeg_ts = []
 
-    for ts_start, ts_end in swear_ts:
+    for ts_start, ts_end in interval:
         seconds_start = srt_to_seconds(ts_start)
         seconds_end = srt_to_seconds(ts_end)
         ffmpeg_ts.append([seconds_start, seconds_end])
@@ -50,7 +79,9 @@ def swear_srt_to_seconds(swear_ts):
     return ffmpeg_ts
 
 def get_subtitle_blocks(file):
-    """Yields timestamp and text as a pair."""
+    """
+    Given an SRT file, yields a block of the time intervals and text dialogue.
+    """
     current_ts = None
     for line in file:
         line = line.strip()
@@ -58,9 +89,19 @@ def get_subtitle_blocks(file):
             current_ts = [t.strip() for t in line.split("-->")]
         elif line and current_ts:
             yield current_ts, line
-            currnet_ts = None
+            current_ts = None
 
-def detect_swear_time_in_subs(srt_file, swears_list):
+def detect_swear_time_interval_in_subs(srt_file, swears_list):
+    """
+    Given an SRT file, detects all of the time intervals where swearing is present.
+    Returns a list of lists of those dialogue lines where swearing took place.
+
+    swears_list (str): path to the swears.txt file. Each line of the file contains an
+    entry for a swear word. This list will determine which words get filtered out.
+
+    Example output:
+        [[183.75, 188.62], [273.23, 276.46]]
+    """
     with open(srt_file, "r") as file:
         swear_timestamps = [
             ts for ts, text in get_subtitle_blocks(file) 

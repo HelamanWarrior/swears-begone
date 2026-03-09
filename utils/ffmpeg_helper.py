@@ -41,15 +41,23 @@ def detect_audio_codec(input_video):
     }
     return audio_info
 
-def extract_audio_dialogue_file(input_video, output_audio):
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", input_video,
-        "-map", "0:a",
+def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_time=None):
+    """
+    Extracts audio from as video file, optionally within a specific time range.
+    The resultant audio is mono WAV which captures the center channels for best capturing
+    the dialogue.
+    """
+    cmd = ["ffmpeg", "-y", "-i", input_video, "-map", "0:a"]
+
+    if start_time is not None:
+        cmd.extend(["-ss", str(start_time)])
+    if end_time is not None:
+        cmd.extend(["-to", str(end_time)])
+
+    cmd.extend([
         "-af", "pan=mono|c0=c2",
         "-acodec", "pcm_s16le",
         "-ar", "16000",
         output_audio
-    ]
+    ])
     subprocess.run(cmd, check=True)

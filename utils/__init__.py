@@ -1,12 +1,11 @@
 from .ffmpeg_helper import (
-    ffprobe_subs_channel, 
     extract_subtitle_file, 
     detect_audio_codec, 
     extract_audio_dialogue_file
 )
 from .sub_helper import (
     identify_dialogue_subs_channel, 
-    extract_embedded_subs, srt_to_seconds, 
+    extract_embedded_subs,
     srt_time_interval_to_seconds, 
     get_subtitle_blocks, 
     find_swear_intervals

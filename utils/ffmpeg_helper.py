@@ -16,6 +16,8 @@ def extract_subtitle_file(input_video, sub_channel, output_srt):
     cmd = [
         "ffmpeg",
         "-y",
+        "-hide_banner",
+        "-loglevel", "error",
         "-i", input_video,
         "-map", "0:" + str(sub_channel),
         output_srt
@@ -47,7 +49,7 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
     The resultant audio is mono WAV which captures the center channels for best capturing
     the dialogue.
     """
-    cmd = ["ffmpeg", "-y", "-i", input_video, "-map", "0:a"]
+    cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", input_video, "-map", "0:a"]
 
     if start_time is not None:
         cmd.extend(["-ss", str(start_time)])
@@ -61,3 +63,17 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
         output_audio
     ])
     subprocess.run(cmd, check=True)
+
+def extract_audio_segments(input_video, intervals):
+    """
+    Extracts many audio segments from a video file, saving them into seperate audio files.
+    """
+    for i, interval in enumerate(intervals):
+        audio_file = f"audio_{i}.wav"
+
+        start, end = interval[0], interval[1]
+        extract_audio_dialogue_file("example.mkv", audio_file, start, end)
+
+        intervals[i].append(audio_file)
+    
+    return intervals

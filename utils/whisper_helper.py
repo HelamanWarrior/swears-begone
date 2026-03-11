@@ -22,7 +22,7 @@ def transcribe_wordlevel_audio(audio_file, model):
         model: loaded Whisper model object
     """
     audio = whisper.load_audio(audio_file)
-    result = whisper.transcribe(model, audio, language=LANGUAGE[:-1])
+    result = whisper.transcribe(model, audio, beam_size=5, best_of=5, temperature=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), language=LANGUAGE[:-1])
     return result
 
 def transcribe_swear_audio_segments(segments, model, swears_list):

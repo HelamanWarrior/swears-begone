@@ -80,6 +80,9 @@ def srt_time_interval_to_seconds(interval):
 def get_subtitle_blocks(file):
     """
     Given an SRT file, yields a block of the time intervals and text dialogue.
+
+    Args:
+        file: An opened Subrip file
     """
     current_ts = None
     current_text = []
@@ -120,5 +123,6 @@ def find_swear_intervals(srt_file, swears_list):
             ts for ts, text in get_subtitle_blocks(file) 
             if search.contains_any(text, swears_list)
         ]
+    print(f"Identified {len(swear_timestamps)} swears in subtitles!")
 
     return swear_timestamps

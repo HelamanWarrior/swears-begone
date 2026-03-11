@@ -73,7 +73,3 @@ def extract_audio_segments(input_video, intervals):
 
         start, end = interval[0], interval[1]
         extract_audio_dialogue_file(input_video, audio_file, start, end)
-
-        intervals[i].append(audio_file)
-    
-    return intervals

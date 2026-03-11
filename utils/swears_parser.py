@@ -2,9 +2,12 @@ def parse_swears_list(input_file):
     """
     Takes a swears.txt file, where each swear word is seperated by a new line.
     Profanity can have the "|" next to it, which offers a replacement word.
-    This word will be used in replacement of the profanity, in the subtitles.
+    This word will be used in the subtitles, taking place of the swear word.
 
-    Returns a list of strings containing each swear word found in the file.
+    Returns: list of strings containing each swear word found in the file.
+
+    Args:
+        input_file: str to the path of the swears.txt file.
     """
     swears_list = []
     with open(input_file, "r") as f:

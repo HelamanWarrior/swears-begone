@@ -7,14 +7,14 @@ import utils.whisper_helper as whisper
 
 def main():
     swears_list = swears.parse_swears_list(config.SWEARS_FILE)
-    subs.extract_embedded_subs("full-example.mkv", "output.srt")
+    subs.extract_embedded_subs("example.mkv", "output.srt")
 
     srt_swear_intervals = subs.find_swear_intervals("output.srt", swears_list)
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
-    swear_intervals = ffmpeg.extract_audio_segments("full-example.mkv", swear_intervals)
+    ffmpeg.extract_audio_segments("example.mkv", swear_intervals)
 
-    model = whisper.load_model(config.WHISPER_MODEL, config.WHISPER_DEVICE)
+    model = whisper.load_model(config.WHISPER_MODEL)
     whisper.transcribe_swear_audio_segments(swear_intervals, model, swears_list)
 
 if __name__ == "__main__":

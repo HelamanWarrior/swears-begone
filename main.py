@@ -15,7 +15,7 @@ def main():
     ffmpeg.extract_audio_segments("example.mkv", swear_intervals)
 
     model = whisper.load_model(config.WHISPER_MODEL)
-    whisper.transcribe_swear_audio_segments(swear_intervals, model, swears_list)
+    whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list)
 
 if __name__ == "__main__":
     main()

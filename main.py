@@ -10,22 +10,27 @@ def main():
     input_video = "example.mkv"
     tmp_dir = files.tmp_dir()
     
-    output_srt_name = files.update_file_extension(input_video, ".srt")
-    output_srt = files.dir_filepath(tmp_dir, output_srt_name)
-
-    swears_list = swears.parse_swears_list(config.SWEARS_FILE)
+    # Embedded Subtitle Extraction
+    srt_name = files.update_file_ext(input_video, ".srt")
+    output_srt = files.dir_filepath(tmp_dir, srt_name)
     subs.extract_embedded_subs(input_video, output_srt)
 
+    # Parsing subtitle segments where swearing is present
+    swears_list = swears.parse_swears_list(config.SWEARS_FILE)
     srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
+    # Save each audio segment
     ffmpeg.extract_audio_segments(input_video, swear_intervals, tmp_dir)
 
+    # Whisper identifies word-level timestamps for profanity
     model = whisper.load_model(config.WHISPER_MODEL)
     mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list, tmp_dir)
 
+    # Generate EDL (Edit Decision List) file
     if config.CREATE_EDL:
-        ffmpeg.write_edl_file(mute_segments, input_video + ".edl")
+        edl_file = files.update_file_ext(input_video, ".edl")
+        ffmpeg.write_edl_file(mute_segments, edl_file)
     
     #ffmpeg.export_cleaned_video(input_video, mute_segments)
 

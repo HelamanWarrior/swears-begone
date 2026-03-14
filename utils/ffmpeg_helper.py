@@ -159,6 +159,7 @@ def export_cleaned_video(input_video, mute_segments):
         output_video
     ]
     subprocess.run(cmd, check=True)
+    print("Successfully sanitized. This video is nowsafe for Sunday School.")
 
 def write_edl_file(mute_segments, output_edl):
     """

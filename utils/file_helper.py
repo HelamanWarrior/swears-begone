@@ -9,7 +9,7 @@ def update_filename(filename, prefix="", suffix=""):
 
     return f"{prefix}{base}{suffix}{ext}"
 
-def update_file_extension(filename, new_ext):
+def update_file_ext(filename, new_ext):
     path_obj = Path(filename)
     base = path_obj.stem
 

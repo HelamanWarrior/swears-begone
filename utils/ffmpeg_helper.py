@@ -1,30 +1,55 @@
+from pathlib import Path
 import subprocess
 
-def ffprobe_subs_channel(input_video):
+def ffprobe_subs_metadata(input_video):
+    """
+    Retrieves subtitle stream metadata from a video file using ffprobe.
+
+    Returns:
+        bytes: A JSON-formatted byte string containing stream indices and language tags.
+
+    Args:
+        input_video (str): Path to the video file to be analyzed.
+    """
     cmd = [
         "ffprobe",
         "-v", "error",
-        "-of", "json",
-        input_video,
-        "-of", "json",
+        "-select_streams", "s",
         "-show_entries", "stream=index:stream_tags=language",
-        "-select_streams", "s"
+        "-of", "json",
+        input_video
     ]
     return subprocess.check_output(cmd)
 
 def extract_subtitle_file(input_video, sub_channel, output_srt):
+    """
+    Extracts a specific subtitle stream from a video file and saves it as an SRT.
+
+    Args:
+        input_video (str): Path to the source video file.
+        sub_channel (int | str): The index of the subtitle stream (e.g., 0, 1, 2)
+        output_srt (str): Destinatino path forr the extracted .srt file.
+    """
     cmd = [
         "ffmpeg",
         "-y",
         "-hide_banner",
         "-loglevel", "error",
         "-i", input_video,
-        "-map", "0:" + str(sub_channel),
+        "-map", f"0:{sub_channel}",
         output_srt
     ]
     subprocess.run(cmd, check=True)
 
-def detect_audio_codec(input_video):
+def detect_audio_info(input_video):
+    """
+    Given an input_video detects the audio information.
+
+    Returns (dict): {'codec_name', 'channels', 'bitrate'}
+
+    Args:
+        input_video: Path to the source video for audio detection.
+    """
     cmd = [
         "ffprobe",
         "-v", "error",
@@ -48,6 +73,11 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
     Extracts audio from as video file, optionally within a specific time range.
     The resultant audio is mono WAV which captures the center channels for best capturing
     the dialogue.
+
+    Args:
+        input_video (str): Path to the source video.
+        output_audio (str): Path to save the output audio file.
+        start_time, end_time (float|str): a duration of seconds.
     """
     cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", input_video, "-map", "0:a"]
 
@@ -67,23 +97,50 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
 def extract_audio_segments(input_video, intervals):
     """
     Extracts many audio segments from a video file, saving them into seperate audio files.
+    
+    Args:
+        input_video (str): Path to the source video file to extract audio from.
+        intervals (list): list of [start, stop] second interval lists.
     """
     for i, interval in enumerate(intervals):
         audio_file = f"audio_{i}.wav"
+        print(f"Extracting audio segment {i+1}: audio_file")
 
         start, end = interval[0], interval[1]
         extract_audio_dialogue_file(input_video, audio_file, start, end)
 
 def mute_filter(s):
+    """
+    Creates an ffmpeg mute filter command for a segment of time.
+
+    Returns: str filter command for the given segment.
+
+    Args:
+        s (dict): contains 'start' and 'end' keys both containing float seconds.
+    """
     return f"volume=enable='between(t,{s['start']}, {s['end']})':volume=0"
 
-def export_cleaned_video(input_video, mute_segments, output_video):
+def export_cleaned_video(input_video, mute_segments):
+    """
+    Creates the final filtered version of the video, with profanity segments muted.
+    The resultant video is saved with "-clean" appended to the filename.
+
+    Args:
+        input_video (str): Path to the input video.
+        mute_segments (dict): contains {'start', 'end'} keys in float seconds.
+    """
     mute_cmds = [mute_filter(segment) for segment in mute_segments]
     audio_filter = ",".join(mute_cmds)
 
-    audio_info = detect_audio_codec(input_video)
+    audio_info = detect_audio_info(input_video)
     
-    print("Exporting cleaned video!")
+    path_obj = Path(input_video)
+    base = path_obj.stem
+    ext = path_obj.suffix
+
+    output_video = f"{base}-cleaned{ext}"
+    
+    print(f"Exporting: {output_video}")
     cmd = [
         "ffmpeg",
         "-y",
@@ -100,11 +157,20 @@ def export_cleaned_video(input_video, mute_segments, output_video):
     subprocess.run(cmd, check=True)
 
 def write_edl_file(mute_segments, output_edl):
+    """
+    Creates an EDL (Edit decision list) file, containing the segments to mute the audio.
+
+    Args:
+        mute_segments (dict): contains {'start', 'end'} keys in float seconds.
+        output_edl (str): Path to save the EDL file.
+    """
     lines = []
     for segment in mute_segments:
         start = str(segment['start'])
         end = str(segment['end'])
-        lines.append(f"{start:<6} {end:<7} 1\n")
+        lines.append(f"{start} {end} 1\n")
     
     with open(output_edl, 'w') as f:
         f.writelines(lines)
+    
+    print(f"Written {output_edl}!\nUse this file with Kodi or MPlayer, if you wish to preserve the original file.")

@@ -1,6 +1,7 @@
 from .ffmpeg_helper import (
     extract_subtitle_file, 
-    extract_audio_segments
+    extract_audio_segments,
+    ffprobe_subs_metadata
 )
 from .sub_helper import (
     extract_embedded_subs,

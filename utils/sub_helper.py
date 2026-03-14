@@ -11,7 +11,7 @@ def identify_dialogue_subs_channel(input_video):
 
     Returns: int (channel number), None (if no compatible subtitle channel found).
     """
-    stdout = ffmpeg.ffprobe_subs_channel(input_video)
+    stdout = ffmpeg.ffprobe_subs_metadata(input_video)
     video_info = json.loads(stdout)
 
     try:

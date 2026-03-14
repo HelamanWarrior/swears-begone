@@ -46,9 +46,11 @@ def transcribe_swear_audio_segments(model, segments, swears_list):
         raw_data = transcribe_wordlevel_audio(audio_file, model)
         word_timestamps = parse_whisper_swear_timestamps(raw_data, swears_list)
 
+        """Aligns Whisper's segment-relative timestamps with the global video timeline
+        by applying the segment's start offset."""
         for entry in word_timestamps:
-            entry['start'] += start_offset
-            entry['end'] += start_offset
+            for key in ('start', 'end'):
+                entry[key] = round(entry[key] + start_offset, 3)
 
         all_detected_swears.extend(word_timestamps)
     print(f"Identified {len(all_detected_swears)} swears timestamps!")

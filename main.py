@@ -6,17 +6,23 @@ import utils.swears_parser as swears
 import utils.whisper_helper as whisper
 
 def main():
-    swears_list = swears.parse_swears_list(config.SWEARS_FILE)
-    subs.extract_embedded_subs("example.mkv", "output.srt")
+    input_video = "example.mkv"
+    output_srt = "output.srt"
 
-    srt_swear_intervals = subs.find_swear_intervals("output.srt", swears_list)
+    swears_list = swears.parse_swears_list(config.SWEARS_FILE)
+    subs.extract_embedded_subs(input_video, output_srt)
+
+    srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
-    ffmpeg.extract_audio_segments("example.mkv", swear_intervals)
+    ffmpeg.extract_audio_segments(input_video, swear_intervals)
 
     model = whisper.load_model(config.WHISPER_MODEL)
-    whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list)
 
+    mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list)
+    print(mute_segments)
+    ffmpeg.write_edl_file(mute_segments, "output.edl")
+    #ffmpeg.export_cleaned_video(input_video, mute_segments, "output.mkv")
 if __name__ == "__main__":
     main()
 

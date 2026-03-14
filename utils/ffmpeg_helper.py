@@ -37,7 +37,7 @@ def detect_audio_codec(input_video):
     ]
     stdout = subprocess.check_output(cmd).decode()
     audio_info = {
-        key: int(value) if value.isdigit() else value
+        key: value
         for line in stdout.strip().split("\n")
         for key, value in [line.split("=", 1)]
     }
@@ -73,3 +73,38 @@ def extract_audio_segments(input_video, intervals):
 
         start, end = interval[0], interval[1]
         extract_audio_dialogue_file(input_video, audio_file, start, end)
+
+def mute_filter(s):
+    return f"volume=enable='between(t,{s['start']}, {s['end']})':volume=0"
+
+def export_cleaned_video(input_video, mute_segments, output_video):
+    mute_cmds = [mute_filter(segment) for segment in mute_segments]
+    audio_filter = ",".join(mute_cmds)
+
+    audio_info = detect_audio_codec(input_video)
+    
+    print("Exporting cleaned video!")
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel", "error",
+        "-i", input_video,
+        "-af", audio_filter,
+        "-c:v", "copy",
+        "-c:a", audio_info['codec_name'],
+        "-ac", audio_info['channels'],
+        "-b:a", audio_info['bit_rate'],
+        output_video
+    ]
+    subprocess.run(cmd, check=True)
+
+def write_edl_file(mute_segments, output_edl):
+    lines = []
+    for segment in mute_segments:
+        start = str(segment['start'])
+        end = str(segment['end'])
+        lines.append(f"{start:<6} {end:<7} 1\n")
+    
+    with open(output_edl, 'w') as f:
+        f.writelines(lines)

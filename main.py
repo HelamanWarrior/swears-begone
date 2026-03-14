@@ -14,7 +14,7 @@ def main():
     srt_name = files.update_file_ext(input_video, ".srt")
     output_srt = files.dir_filepath(tmp_dir, srt_name)
     subs.extract_embedded_subs(input_video, output_srt)
-
+    
     # Parsing subtitle segments where swearing is present
     swears_list = swears.parse_swears_list(config.SWEARS_FILE)
     srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)

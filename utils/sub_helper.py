@@ -1,6 +1,7 @@
 from config import LANGUAGE
 import utils.search as search
 import utils.ffmpeg_helper as ffmpeg
+import srt
 import json
 import subprocess
 
@@ -48,18 +49,17 @@ def extract_embedded_subs(input_video, output_srt):
 
 def srt_to_seconds(timestamp):
     """
-    Converts timestamp (str) from 'HH:MM:SS,mmm' (standard SubRip format) 
+    Converts timestamp (str) from 'HH:MM:SS.mmm' (standard SubRip format) 
     to total seconds (float).
 
-    >>> srt_to_seconds("01:26:02,773")
+    >>> srt_to_seconds("01:26:02.773")
     5162.773
     """
-    h, m, s_ms = timestamp.split(':')
-    s, ms = s_ms.split(',')
+    h, m, s = timestamp.split(':')
 
-    return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
+    return int(h) * 3600 + int(m) * 60 + float(s)
 
-def srt_time_interval_to_seconds(interval):
+def srt_time_interval_to_seconds(intervals):
     """
     Converts a list of SRT timecode pairs into a list of float intervals in seconds.
 
@@ -74,43 +74,12 @@ def srt_time_interval_to_seconds(interval):
     """
     ffmpeg_ts = []
 
-    for ts_start, ts_end in interval:
+    for ts_start, ts_end in intervals:
         seconds_start = srt_to_seconds(ts_start)
         seconds_end = srt_to_seconds(ts_end)
         ffmpeg_ts.append([seconds_start, seconds_end])
     
     return ffmpeg_ts
-
-def get_subtitle_blocks(file):
-    """
-    Given an SRT file, yields a block of the time intervals and text dialogue.
-
-    Args:
-        file (object): An opened Subrip file.
-    """
-    current_ts = None
-    current_text = []
-
-    for line in file:
-        line = line.strip()
-
-        if "-->" in line:
-            # If we were already tracking a block, yield it before starting new one
-            if current_ts and current_text:
-                yield current_ts, " ".join(current_text)
-            
-            current_ts = [t.strip() for t in line.split("-->")]
-            current_text = []
-        elif line and line.isdigit():
-            # Skip the index numbers (1, 2, 3...)
-            continue
-        elif line:
-            # Collect lines of dialogue
-            current_text.append(line)
-    
-    # Yield the very last block in the file
-    if current_ts and current_text:
-        yield current_ts, " ".join(current_text)
 
 def find_swear_intervals(srt_file, swears_list):
     """
@@ -124,23 +93,26 @@ def find_swear_intervals(srt_file, swears_list):
     Example output:
         [[183.75, 188.62], [273.23, 276.46]]
     """
-    with open(str(srt_file), "r") as file:
-        swear_timestamps = [
-            ts for ts, text in get_subtitle_blocks(file) 
-            if search.contains_any(text, swears_list)
-        ]
-    print(f"Identified {len(swear_timestamps)} swears in subtitles!")
+    swear_timestamps = []
 
+    with open(str(srt_file), "r") as file:
+        subtitle_generator = srt.parse(file)
+        subtitles = list(subtitle_generator)
+        for sub in subtitles:
+            if search.contains_any(sub.content, swears_list):
+                swear_timestamps.append([str(sub.start), str(sub.end)])
+    
+    print(f"Identified {len(swear_timestamps)} swears in subtitles!")
     return swear_timestamps
 
 def clean_subtitles(input_srt, swear_list, output_srt):
-    lines_cleaned = []
+    subtitles = []
     with open(str(input_srt), 'r') as f:
-        for line in f.readlines():
-            lines_cleaned.append(line)
-    
-    for i, line in enumerate(lines_cleaned):
-        lines_cleaned[i] = search.replace_any(str(line), swear_list, "[____]")
+        subtitle_generator = srt.parse(f)
+        subtitles = list(subtitle_generator)
+
+    for sub in subtitles:
+        sub.content = search.replace_any(sub.content, swear_list, "[____]")
     
     with open(str(output_srt), 'w') as f:
-        f.writelines(lines_cleaned)
+        f.writelines(srt.compose(subtitles))

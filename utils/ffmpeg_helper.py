@@ -1,3 +1,4 @@
+from config import LANGUAGE
 from utils.file_helper import update_filename, dir_filepath
 import subprocess
 
@@ -128,7 +129,7 @@ def mute_filter(s):
     """
     return f"volume=enable='between(t,{s['start']}, {s['end']})':volume=0"
 
-def export_cleaned_video(input_video, mute_segments):
+def export_cleaned_video(input_video, mute_segments, embed_subs=None):
     """
     Creates the final filtered version of the video, with profanity segments muted.
     The resultant video is saved with "-clean" appended to the filename.
@@ -151,15 +152,33 @@ def export_cleaned_video(input_video, mute_segments):
         "-hide_banner",
         "-loglevel", "error",
         "-i", str(input_video),
-        "-af", audio_filter,
-        "-c:v", "copy",
-        "-c:a", audio_info['codec_name'],
+    ]
+    
+    # Embed subtitles into video file
+    if not embed_subs is None:
+        cmd.extend([
+            "-i", str(embed_subs), 
+            "-map", "1:0", "-c:s", "srt",
+            "-metadata:s:s:0", f"language={LANGUAGE}",
+            "-metadata:s:s:0", "title=Cleaned English",
+            # All original subs preserved
+            "-map", "0:s?"
+        ])
+    
+    cmd.extend([
+        "-map", "0:v", "-c:v", "copy",
+        "-map", "0:a", "-c:a", audio_info['codec_name'],
         "-ac", audio_info['channels'],
         "-b:a", audio_info['bit_rate'],
+        "-af", audio_filter,
+        "-disposition:s:0", "default",
+        # Turn off default flag for all other subs to prevent conflict
+        "-disposition:s:1", "0",
         output_video
-    ]
+    ])
+
     subprocess.run(cmd, check=True)
-    print("Successfully sanitized. This video is nowsafe for Sunday School.")
+    print("Successfully sanitized. This video is now safe for Sunday School!")
 
 def write_edl_file(mute_segments, output_edl):
     """

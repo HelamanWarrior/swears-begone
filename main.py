@@ -27,12 +27,16 @@ def main():
     model = whisper.load_model(config.WHISPER_MODEL)
     mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list, tmp_dir)
 
+    # Clean subtitles
+    clean_subs_file = f"{config.LANGUAGE}.srt"
+    subs.clean_subtitles(output_srt, swears_list, clean_subs_file)
+
     # Generate EDL (Edit Decision List) file
     if config.CREATE_EDL:
         edl_file = files.update_file_ext(input_video, ".edl")
         ffmpeg.write_edl_file(mute_segments, edl_file)
     
-    #ffmpeg.export_cleaned_video(input_video, mute_segments)
+    ffmpeg.export_cleaned_video(input_video, mute_segments, clean_subs_file)
 
     # Cleanup the temporary files
     files.rm_tmp(tmp_dir)

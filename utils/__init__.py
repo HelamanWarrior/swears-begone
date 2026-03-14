@@ -14,5 +14,6 @@ from .whisper_helper import (
     transcribe_swear_audio_segments,
     parse_whisper_swear_timestamps
 )
+from .file_helper import update_filename
 from .search import contains_any
 from .swears_parser import parse_swears_list

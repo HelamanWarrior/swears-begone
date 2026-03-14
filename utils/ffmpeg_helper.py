@@ -1,4 +1,4 @@
-from pathlib import Path
+from utils.file_helper import update_filename, dir_filepath
 import subprocess
 
 def ffprobe_subs_metadata(input_video):
@@ -101,16 +101,17 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
     ])
     subprocess.run(cmd, check=True)
 
-def extract_audio_segments(input_video, intervals):
+def extract_audio_segments(input_video, intervals, output_dir):
     """
     Extracts many audio segments from a video file, saving them into seperate audio files.
     
     Args:
         input_video (str | Path): Path to the source video file to extract audio from.
         intervals (list): list of [start, stop] second interval lists.
+        output_dir (str | Path): Path to the directory for extracted audio.
     """
     for i, interval in enumerate(intervals):
-        audio_file = f"audio_{i}.wav"
+        audio_file = dir_filepath(output_dir, f"audio_{i}.wav")
         print(f"Extracting audio segment {i+1}: {audio_file}")
 
         start, end = interval[0], interval[1]
@@ -140,12 +141,8 @@ def export_cleaned_video(input_video, mute_segments):
     audio_filter = ",".join(mute_cmds)
 
     audio_info = detect_audio_info(input_video)
-    
-    path_obj = Path(input_video)
-    base = path_obj.stem
-    ext = path_obj.suffix
 
-    output_video = f"{base}-cleaned{ext}"
+    output_video = update_filename(input_video, "", "-cleaned")
     
     print(f"Exporting: {output_video}")
     cmd = [

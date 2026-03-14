@@ -1,13 +1,17 @@
 import config
 import utils.search as search
 import utils.sub_helper as subs
+import utils.file_helper as files
 import utils.ffmpeg_helper as ffmpeg
 import utils.swears_parser as swears
 import utils.whisper_helper as whisper
 
 def main():
-    input_video = "full-example.mkv"
-    output_srt = "output.srt"
+    input_video = "example.mkv"
+    tmp_dir = files.tmp_dir()
+    
+    output_srt_name = files.update_file_extension(input_video, ".srt")
+    output_srt = files.dir_filepath(tmp_dir, output_srt_name)
 
     swears_list = swears.parse_swears_list(config.SWEARS_FILE)
     subs.extract_embedded_subs(input_video, output_srt)
@@ -15,14 +19,18 @@ def main():
     srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
-    ffmpeg.extract_audio_segments(input_video, swear_intervals)
+    ffmpeg.extract_audio_segments(input_video, swear_intervals, tmp_dir)
 
     model = whisper.load_model(config.WHISPER_MODEL)
-    mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list)
+    mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list, tmp_dir)
 
     if config.CREATE_EDL:
         ffmpeg.write_edl_file(mute_segments, input_video + ".edl")
     
-    ffmpeg.export_cleaned_video(input_video, mute_segments)
+    #ffmpeg.export_cleaned_video(input_video, mute_segments)
+
+    # Cleanup the temporary files
+    files.rm_tmp(tmp_dir)
+
 if __name__ == "__main__":
     main()

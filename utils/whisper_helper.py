@@ -1,4 +1,5 @@
 from config import LANGUAGE, WHISPER_MODEL
+from utils.file_helper import dir_filepath
 import whisper_timestamped as whisper
 import utils.search as search
 
@@ -27,7 +28,7 @@ def transcribe_wordlevel_audio(audio_file, model):
     result = whisper.transcribe(model, audio, beam_size=5, best_of=5, temperature=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), language=LANGUAGE[:-1])
     return result
 
-def transcribe_swear_audio_segments(model, segments, swears_list):
+def transcribe_swear_audio_segments(model, segments, swears_list, audio_dir):
     """
     Transcribes all the extracted audio files to find the word-level timestamps
     for any word contained in the swears_list.
@@ -38,11 +39,12 @@ def transcribe_swear_audio_segments(model, segments, swears_list):
         segments: list of timecode pairs, each are float intervals in seconds.
         model: loaded Whisper model object.
         swears_list: list of strings to identify word-level timestamps for.
+        audio_dir (str | Path): directory to examine audio segments.
     """
     all_detected_swears = []
 
     for i, segment in enumerate(segments):
-        audio_file = f"audio_{i}.wav"
+        audio_file = dir_filepath(audio_dir, f"audio_{i}.wav")
         start_offset = segment[0]
 
         raw_data = transcribe_wordlevel_audio(audio_file, model)

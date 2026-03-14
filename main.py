@@ -26,15 +26,3 @@ def main():
     ffmpeg.export_cleaned_video(input_video, mute_segments)
 if __name__ == "__main__":
     main()
-
-#extract_center_channel("example.mkv", "dialogue.wav")
-#detect_audio_codec("example.mkv")
-
-#model = whisper.load_model(WHISPER_MODEL, device=WHISPER_DEVICE)
-#transcript = transcribe_wordlevel_audio("dialogue.wav", model)
-
-#print(parse_whisper_swear_ts(transcript, swears_list))
-
-
-#extract_center_channel("example.mkv", "dialogue.wav")
-#help(whisper.transcribe)

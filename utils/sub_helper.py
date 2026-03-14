@@ -10,6 +10,9 @@ def identify_dialogue_subs_channel(input_video):
     It identifies the first subtitle stream matching the perferred lang config.
 
     Returns: int (channel number), None (if no compatible subtitle channel found).
+
+    Args:
+        input_video (str | path): Source video for identifying subtitle channel.
     """
     stdout = ffmpeg.ffprobe_subs_metadata(input_video)
     video_info = json.loads(stdout)
@@ -31,13 +34,14 @@ def extract_embedded_subs(input_video, output_srt):
     Extracts and writes out the embedded subtitles into an SRT file.
     Automatically identifies correct subtitles using preferred lang config.
 
-    input_video (str): path to the video to extract subs from.
-    output_srt (str): path to output SRT subtitle file.
+    Args:
+        input_video (str | Path): path to the video to extract subs from.
+        output_srt (str | Path): path to output SRT subtitle file.
     """
     sub_channel = identify_dialogue_subs_channel(input_video)
 
     if sub_channel is None:
-        print("No subtitle channel found for perferred language:" + LANGUAGE)
+        print(f"No subtitle channel found for perferred language: {LANGUAGE}")
         return
 
     ffmpeg.extract_subtitle_file(input_video, sub_channel, output_srt)
@@ -82,7 +86,7 @@ def get_subtitle_blocks(file):
     Given an SRT file, yields a block of the time intervals and text dialogue.
 
     Args:
-        file: An opened Subrip file
+        file (object): An opened Subrip file.
     """
     current_ts = None
     current_text = []
@@ -113,12 +117,14 @@ def find_swear_intervals(srt_file, swears_list):
     Locates time intervals in an SRT file containing profanity.
     Returns a list of [start, end] floats in seconds.
 
-    swears_list: a list of swear words (str) to filter out.
+    Args:
+        srt_file (str | Path): subtitle file for swear interval detection.
+        swears_list: a list of swear words (str) to filter out.
 
     Example output:
         [[183.75, 188.62], [273.23, 276.46]]
     """
-    with open(srt_file, "r") as file:
+    with open(str(srt_file), "r") as file:
         swear_timestamps = [
             ts for ts, text in get_subtitle_blocks(file) 
             if search.contains_any(text, swears_list)

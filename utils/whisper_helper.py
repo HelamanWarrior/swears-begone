@@ -18,10 +18,12 @@ def transcribe_wordlevel_audio(audio_file, model):
     Uses Whisper to transcribe word-level audio of a perferred language.
 
     Args:
-        audio_file: str path to audio file to transcribe.
+        audio_file (str | Path): path to audio file to transcribe.
         model: loaded Whisper model object
     """
-    audio = whisper.load_audio(audio_file)
+    print(f"Transcribing {audio_file}...")
+
+    audio = whisper.load_audio(str(audio_file))
     result = whisper.transcribe(model, audio, beam_size=5, best_of=5, temperature=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), language=LANGUAGE[:-1])
     return result
 

@@ -7,10 +7,10 @@ def parse_swears_list(input_file):
     Returns: list of strings containing each swear word found in the file.
 
     Args:
-        input_file: str to the path of the swears.txt file.
+        input_file (str | Path): str to the path of the swears.txt file.
     """
     swears_list = []
-    with open(input_file, "r") as f:
+    with open(str(input_file), "r") as f:
         for line in f:
             swear_array = line.strip().split("|")[0]
             swears_list.append(swear_array)

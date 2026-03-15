@@ -7,7 +7,7 @@ import utils.swears_parser as swears
 import utils.whisper_helper as whisper
 
 def main():
-    input_video = "example.mkv"
+    input_video = "example-cleaned.mkv"
     tmp_dir = files.tmp_dir()
     
     # Embedded Subtitle Extraction
@@ -15,9 +15,14 @@ def main():
     output_srt = files.dir_filepath(tmp_dir, srt_name)
     subs.extract_embedded_subs(input_video, output_srt)
     
-    # Parsing subtitle segments where swearing is present
-    swears_list = swears.parse_swears_list(config.SWEARS_FILE)
+    # Parsing subtitle segments where swearing is presents
+    swears_dict = swears.parse_swears_list(config.SWEARS_FILE)
+    swears_list = list(swears_dict)
+
     srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)
+    if len(srt_swear_intervals) == 0:
+        print("The provided video subtitles contains no profanity.")
+        return
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
     # Save each audio segment
@@ -28,8 +33,8 @@ def main():
     mute_segments = whisper.transcribe_swear_audio_segments(model, swear_intervals, swears_list, tmp_dir)
 
     # Clean subtitles
-    clean_subs_file = f"{config.LANGUAGE}.srt"
-    subs.clean_subtitles(output_srt, swears_list, clean_subs_file)
+    clean_subs_file = files.dir_filepath(tmp_dir, f"{config.LANGUAGE}.srt")
+    subs.clean_subtitles(output_srt, swears_dict, clean_subs_file)
 
     # Generate EDL (Edit Decision List) file
     if config.CREATE_EDL:

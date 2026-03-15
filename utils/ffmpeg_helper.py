@@ -84,9 +84,7 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
         "ffmpeg",
         "-y", 
         "-hide_banner", 
-        "-loglevel", "error", 
-        "-i", str(input_video), 
-        "-map", "0:a"
+        "-loglevel", "error"
     ]
 
     if start_time is not None:
@@ -95,6 +93,8 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
         cmd.extend(["-to", str(end_time)])
 
     cmd.extend([
+        "-i", str(input_video), 
+        "-map", "0:a:0",
         "-af", "pan=mono|c0=c2",
         "-acodec", "pcm_s16le",
         "-ar", "16000",
@@ -158,22 +158,24 @@ def export_cleaned_video(input_video, mute_segments, embed_subs=None):
     if not embed_subs is None:
         cmd.extend([
             "-i", str(embed_subs), 
-            "-map", "1:0", "-c:s", "srt",
+            # Map clean subs first
+            "-map", "1:0",
+            # Map all original subs
+            "-map", "0:s?",
+            "-c:s", "copy",
+            "-c:s:0", "srt",
             "-metadata:s:s:0", f"language={LANGUAGE}",
             "-metadata:s:s:0", "title=Cleaned English",
-            # All original subs preserved
-            "-map", "0:s?"
         ])
     
     cmd.extend([
         "-map", "0:v", "-c:v", "copy",
-        "-map", "0:a", "-c:a", audio_info['codec_name'],
+        "-map", "0:a:0", "-c:a", audio_info['codec_name'],
         "-ac", audio_info['channels'],
         "-b:a", audio_info['bit_rate'],
-        "-af", audio_filter,
+        "-filter:a:0", audio_filter,
+        "-disposition:s", "0",
         "-disposition:s:0", "default",
-        # Turn off default flag for all other subs to prevent conflict
-        "-disposition:s:1", "0",
         output_video
     ])
 

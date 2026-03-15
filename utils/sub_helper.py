@@ -105,14 +105,14 @@ def find_swear_intervals(srt_file, swears_list):
     print(f"Identified {len(swear_timestamps)} swears in subtitles!")
     return swear_timestamps
 
-def clean_subtitles(input_srt, swear_list, output_srt):
+def clean_subtitles(input_srt, swear_dict, output_srt):
     subtitles = []
     with open(str(input_srt), 'r') as f:
         subtitle_generator = srt.parse(f)
         subtitles = list(subtitle_generator)
 
     for sub in subtitles:
-        sub.content = search.replace_any(sub.content, swear_list, "[____]")
+        sub.content = search.replace_with_mapping(sub.content, swear_dict)
     
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))

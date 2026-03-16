@@ -6,12 +6,16 @@ def update_filename(filename, prefix="", suffix=""):
     path_obj = Path(filename)
     base = path_obj.stem
     ext = path_obj.suffix
+    base_dir = path_obj.parent.resolve()
 
-    return f"{prefix}{base}{suffix}{ext}"
+    new_filename = f"{prefix}{base}{suffix}{ext}"
+
+    return base_dir / new_filename
 
 def update_file_ext(filename, new_ext):
     path_obj = Path(filename)
     base = path_obj.stem
+    base_dir = path_obj.parent.resolve()
 
     return f"{base}{new_ext}"
 

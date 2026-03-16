@@ -1,3 +1,4 @@
+import argparse
 import config
 import utils.search as search
 import utils.sub_helper as subs
@@ -36,12 +37,48 @@ def subs_approach(input_video, output_srt, tmp_dir):
     ffmpeg.export_cleaned_video(input_video, mute_segments, clean_subs_file)
 
 def main():
-    input_video = "example.mkv"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', required=True, help='input video file', metavar='<input video>')
+    parser.add_argument(
+        '-m',
+        '--model',
+        help=f'whisper model to use for word-level transcription and detection (default is "{config.WHISPER_MODEL}")',
+        default=config.WHISPER_MODEL,
+        metavar='<model>'
+    )
+    parser.add_argument(
+        '-l',
+        '--lang',
+        help=f'default language for extracting srt and swears detection (default is "{config.LANGUAGE}")',
+        default=config.LANGUAGE,
+        metavar='<language>'
+    )
+    parser.add_argument(
+        '--edl',
+        help='generate MPlayer EDL file with mute actions',
+        dest='edl',
+        action='store_true'
+    )
+    parser.add_argument(
+        '-w',
+        '--swears',
+        help='text file containing profanity (with optional mapping)',
+        default=config.SWEARS_FILE,
+        metavar='<profanity file>'
+    )
+    args = parser.parse_args()
+
+    input_video = args.input
+    config.LANGUAGE = args.lang
+    config.WHISPER_MODEL = args.model
+    config.SWEARS_FILE = args.swears
+    if args.edl:
+        config.CREATE_EDL = True
+
     tmp_dir = files.tmp_dir()
     
     try:
-        srt_name = files.update_file_ext(input_video, ".srt")
-        output_srt = files.dir_filepath(tmp_dir, srt_name)
+        output_srt = tmp_dir / files.update_file_ext(input_video, ".srt")
 
         channel = subs.extract_embedded_subs(input_video, output_srt)
 

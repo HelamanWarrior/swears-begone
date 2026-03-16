@@ -4,9 +4,17 @@ def contains_any(text, items):
     pattern = r'\b(' + '|'.join(re.escape(item) for item in items) + r')\b'
     return re.search(pattern, text, re.IGNORECASE) is not None
 
-def replace_with_mapping(text, substitutions):
+def replace_with_mapping(text, substitutions, default=""):
     """
     Replaces occurrences of keys in 'substitutions' with their corresponding values.
+
+    Returns: (str) with substituted text applied.
+
+    Args:
+        text (str): input text to match with replacement.
+        substitutions (dict): each key (str) found in the text, 
+            is substituted with the corresponding key value (str). 
+        default (str): str to substitute if no value is assigned to key.
     """
     if not substitutions:
         return text
@@ -18,17 +26,6 @@ def replace_with_mapping(text, substitutions):
     # Gets the replacement key value to the corresponding swear
     def make_replacement(match):
         swear_word = match.group(0)
-        return substitutions.get(swear_word.lower(), "****")
+        return substitutions.get(swear_word.lower(), default)
     
     return re.sub(pattern, make_replacement, text, flags=re.IGNORECASE)
-
-def replace_any(text, items, replacement):
-    """
-    Replaces any occurrences of words in 'items' with 'replacement'.
-    Uses word boundaries to ensure partial words aren't replaced.
-    """
-    if not items:
-        return text
-    
-    pattern = r'\b(' + "|".join(re.escape(item) for item in items) + r')\b'
-    return re.sub(pattern, replacement, text, flags=re.IGNORECASE)

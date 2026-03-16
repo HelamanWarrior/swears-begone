@@ -6,23 +6,15 @@ import utils.ffmpeg_helper as ffmpeg
 import utils.swears_parser as swears
 import utils.whisper_helper as whisper
 
-def main():
-    input_video = "example-cleaned.mkv"
-    tmp_dir = files.tmp_dir()
-    
-    # Embedded Subtitle Extraction
-    srt_name = files.update_file_ext(input_video, ".srt")
-    output_srt = files.dir_filepath(tmp_dir, srt_name)
-    subs.extract_embedded_subs(input_video, output_srt)
-    
+def subs_approach(input_video, output_srt, tmp_dir):    
     # Parsing subtitle segments where swearing is presents
     swears_dict = swears.parse_swears_list(config.SWEARS_FILE)
     swears_list = list(swears_dict)
 
     srt_swear_intervals = subs.find_swear_intervals(output_srt, swears_list)
     if len(srt_swear_intervals) == 0:
-        print("The provided video subtitles contains no profanity.")
-        return
+        raise RuntimeError("Embedded subtitles contains no profanity.")
+    
     swear_intervals = subs.srt_time_interval_to_seconds(srt_swear_intervals)
 
     # Save each audio segment
@@ -43,7 +35,23 @@ def main():
     
     ffmpeg.export_cleaned_video(input_video, mute_segments, clean_subs_file)
 
-    # Cleanup the temporary files
+def main():
+    input_video = "example.mkv"
+    tmp_dir = files.tmp_dir()
+    
+    try:
+        srt_name = files.update_file_ext(input_video, ".srt")
+        output_srt = files.dir_filepath(tmp_dir, srt_name)
+
+        channel = subs.extract_embedded_subs(input_video, output_srt)
+
+        if channel == -1:
+            raise RuntimeError("No compatible subtitles found.")
+        
+        subs_approach(input_video, output_srt, tmp_dir)
+    except Exception as e:
+        print(f"Skipping subtitle approach: {e}")
+    
     files.rm_tmp(tmp_dir)
 
 if __name__ == "__main__":

@@ -35,6 +35,9 @@ def extract_embedded_subs(input_video, output_srt):
     Extracts and writes out the embedded subtitles into an SRT file.
     Automatically identifies correct subtitles using preferred lang config.
 
+    Returns: (int) channel of extracted subtitle stream.
+        -1 if no subtitle stream was detected.
+
     Args:
         input_video (str | Path): path to the video to extract subs from.
         output_srt (str | Path): path to output SRT subtitle file.
@@ -43,9 +46,10 @@ def extract_embedded_subs(input_video, output_srt):
 
     if sub_channel is None:
         print(f"No subtitle channel found for perferred language: {LANGUAGE}")
-        return
+        return -1
 
     ffmpeg.extract_subtitle_file(input_video, sub_channel, output_srt)
+    return sub_channel
 
 def srt_to_seconds(timestamp):
     """
@@ -106,13 +110,25 @@ def find_swear_intervals(srt_file, swears_list):
     return swear_timestamps
 
 def clean_subtitles(input_srt, swear_dict, output_srt):
+    """
+    Filters profanity within a SubRip (SRT) file using a replacement dictionary.
+
+    Iterates through the subtitle text and replaces identified words with either a 
+    generic mask ("****") or a specific substitute provided in the `swear_dict`.
+
+    Args:
+        input_srt (str | Path): Path to the subrip file to filter.
+        swear_dict (dict): A mapping where keys are profanities (str) and
+            values are their intended replacements (str).
+        output_srt (str | Path): Path to the resultant filtered SRT file.
+    """
     subtitles = []
     with open(str(input_srt), 'r') as f:
         subtitle_generator = srt.parse(f)
         subtitles = list(subtitle_generator)
 
     for sub in subtitles:
-        sub.content = search.replace_with_mapping(sub.content, swear_dict)
+        sub.content = search.replace_with_mapping(sub.content, swear_dict, "****")
     
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))

@@ -1,0 +1,2 @@
+whisper-timestamped>=1.15.9
+srt>=3.5.3

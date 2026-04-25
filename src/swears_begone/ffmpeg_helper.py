@@ -1,8 +1,7 @@
-from config import LANGUAGE
-from utils.file_helper import update_filename, dir_filepath
 import subprocess
+from pathlib import Path
 
-def ffprobe_subs_metadata(input_video):
+def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     """
     Retrieves subtitle stream metadata from a video file using ffprobe.
 
@@ -22,7 +21,11 @@ def ffprobe_subs_metadata(input_video):
     ]
     return subprocess.check_output(cmd)
 
-def extract_subtitle_file(input_video, sub_channel, output_srt):
+def extract_subtitle_file(
+    input_video: str | Path, 
+    sub_channel: int,
+    output_srt: str | Path
+) -> None:
     """
     Extracts a specific subtitle stream from a video file and saves it as an SRT.
 
@@ -37,12 +40,13 @@ def extract_subtitle_file(input_video, sub_channel, output_srt):
         "-hide_banner",
         "-loglevel", "error",
         "-i", str(input_video),
+        "-c:s", "subrip",
         "-map", f"0:{sub_channel}",
         str(output_srt)
     ]
     subprocess.run(cmd, check=True)
 
-def detect_audio_info(input_video):
+def detect_audio_info(input_video: str) -> dict[str, str | int]:
     """
     Given an input_video detects the audio information.
 
@@ -69,7 +73,12 @@ def detect_audio_info(input_video):
     }
     return audio_info
 
-def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_time=None):
+def extract_audio_dialogue_file(
+    input_video: str | Path,
+    output_audio: str | Path,
+    start: float | str=None,
+    end: float | str=None
+) -> None:
     """
     Extracts audio from as video file, optionally within a specific time range.
     The resultant audio is mono WAV which captures the center channels for best capturing
@@ -78,7 +87,7 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
     Args:
         input_video (str | Path): Path to the source video.
         output_audio (str | Path): Path to save the output audio file.
-        start_time, end_time (float|str): a duration of seconds.
+        start, end (float|str): a duration of seconds.
     """
     cmd = [
         "ffmpeg",
@@ -87,10 +96,10 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
         "-loglevel", "error"
     ]
 
-    if start_time is not None:
-        cmd.extend(["-ss", str(start_time)])
-    if end_time is not None:
-        cmd.extend(["-to", str(end_time)])
+    if start is not None:
+        cmd.extend(["-ss", str(start)])
+    if end is not None:
+        cmd.extend(["-to", str(end)])
 
     cmd.extend([
         "-i", str(input_video), 
@@ -102,7 +111,11 @@ def extract_audio_dialogue_file(input_video, output_audio, start_time=None, end_
     ])
     subprocess.run(cmd, check=True)
 
-def extract_audio_segments(input_video, intervals, output_dir):
+def extract_audio_segments(
+    input_video: str | Path, 
+    intervals: list[float], 
+    output_dir: str | Path
+) -> None:
     """
     Extracts many audio segments from a video file, saving them into seperate audio files.
     
@@ -112,13 +125,13 @@ def extract_audio_segments(input_video, intervals, output_dir):
         output_dir (str | Path): Path to the directory for extracted audio.
     """
     for i, interval in enumerate(intervals):
-        audio_file = dir_filepath(output_dir, f"audio_{i}.wav")
+        audio_file = Path(output_dir) / f"audio_{i}.wav"
         print(f"Extracting audio segment {i+1}: {audio_file}")
 
         start, end = interval[0], interval[1]
         extract_audio_dialogue_file(input_video, audio_file, start, end)
 
-def mute_filter(s):
+def mute_filter(s: dict[str, float]) -> str:
     """
     Creates an ffmpeg mute filter command for a segment of time.
 
@@ -129,7 +142,12 @@ def mute_filter(s):
     """
     return f"volume=enable='between(t,{s['start']}, {s['end']})':volume=0"
 
-def export_cleaned_video(input_video, mute_segments, embed_subs=None):
+def export_cleaned_video(
+    input_video: str | Path,
+    mute_segments: dict[str, float],
+    lang: str,
+    embed_subs: str | Path=None
+) -> None:
     """
     Creates the final filtered version of the video, with profanity segments muted.
     The resultant video is saved with "-clean" appended to the filename.
@@ -143,46 +161,53 @@ def export_cleaned_video(input_video, mute_segments, embed_subs=None):
 
     audio_info = detect_audio_info(input_video)
 
-    output_video = update_filename(input_video, "", "-cleaned")
+    path = Path(input_video)
+    output_video = path.parent.resolve() / f"{path.stem}-cleaned{path.suffix}"
     
     print(f"Exporting: {output_video}")
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-hide_banner",
-        "-loglevel", "error",
-        "-i", str(input_video),
-    ]
-    
-    # Embed subtitles into video file
-    if not embed_subs is None:
-        cmd.extend([
-            "-i", str(embed_subs), 
-            # Map clean subs first
-            "-map", "1:0",
-            # Map all original subs
-            "-map", "0:s?",
-            "-c:s", "copy",
-            "-c:s:0", "srt",
-            "-metadata:s:s:0", f"language={LANGUAGE}",
-            "-metadata:s:s:0", "title=Cleaned English",
-        ])
+
+    cmd = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(input_video)]
+
+    if embed_subs is not None:
+        cmd.extend(['-i', str(embed_subs)])
     
     cmd.extend([
-        "-map", "0:v", "-c:v", "copy",
-        "-map", "0:a:0", "-c:a", audio_info['codec_name'],
+        "-map", "0:v:0",
+        "-map", "0:a:0",
+    ])
+
+    if embed_subs is not None:
+        cmd.extend([
+            "-map", "1:0",      # Map clean subs first
+            #"-map", "0:s?",     # Map all existing subs
+        ])
+    else:
+        # If no new subs, just keep original ones
+        cmd.extend(["-map", "0:s:?"])
+    
+    cmd.extend([
+        "-c:v", "copy",
+        "-c:a", audio_info['codec_name'],
         "-ac", audio_info['channels'],
         "-b:a", audio_info['bit_rate'],
-        "-filter:a:0", audio_filter,
-        "-disposition:s", "0",
-        "-disposition:s:0", "default",
-        output_video
     ])
+
+    if embed_subs is not None:
+        cmd.extend([
+            "-c:s", "copy",
+            "-c:s:0", "srt",
+            "-metadata:s:s:0", f"language={lang}",
+            "-metadata:s:s:0", f"title=Cleaned {lang}",
+            "-disposition:s:0", "default",
+            "-disposition:s:1", "0",
+        ])
+    
+    cmd.extend(["-filter:a:0", audio_filter, str(output_video)])
 
     subprocess.run(cmd, check=True)
     print("\u2714 Successfully sanitized. This video is now safe for Sunday School!")
 
-def write_edl_file(mute_segments, output_edl):
+def write_edl_file(mute_segments: dict[str, float], output_edl: str | Path) -> None:
     """
     Creates an EDL (Edit decision list) file, containing the segments to mute the audio.
 

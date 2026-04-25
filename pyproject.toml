@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swears-begone"
+version = "0.1.0"
+description = "A CLI tool for filtering profanity from videos with Whisper"
+dependencies = [
+    "whisper-timestamped>=1.15.9",
+    "srt>=3.5.0"
+]
+
+[project.scripts]
+swears-begone = "swears_begone.cli:main"

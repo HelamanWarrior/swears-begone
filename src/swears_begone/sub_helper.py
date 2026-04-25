@@ -1,11 +1,18 @@
-from config import LANGUAGE
-import utils.search as search
-import utils.ffmpeg_helper as ffmpeg
 import srt
 import json
 import subprocess
+from pathlib import Path
 
-def identify_dialogue_subs_channel(input_video):
+from swears_begone.ffmpeg_helper import (
+    ffprobe_subs_metadata,
+    extract_subtitle_file
+)
+from swears_begone.search import (
+    contains_any,
+    replace_with_mapping
+)
+
+def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     """
     Given a video (path), identifies the which channel the subtitles are found on.
     It identifies the first subtitle stream matching the perferred lang config.
@@ -15,7 +22,7 @@ def identify_dialogue_subs_channel(input_video):
     Args:
         input_video (str | path): Source video for identifying subtitle channel.
     """
-    stdout = ffmpeg.ffprobe_subs_metadata(input_video)
+    stdout = ffprobe_subs_metadata(input_video)
     video_info = json.loads(stdout)
 
     try:
@@ -23,14 +30,19 @@ def identify_dialogue_subs_channel(input_video):
         preferred_lang_index = 0
 
         for stream in streams:
-            if stream['tags']['language'] == LANGUAGE:
+            if stream['tags']['language'] == lang:
                 preferred_lang_index = stream['index']
                 return preferred_lang_index
     except KeyError:
         print("No subtitle streams were found")
         return None
 
-def extract_embedded_subs(input_video, output_srt):
+def extract_embedded_subs(
+    input_video: str | Path,
+    output_srt: str | Path,
+    lang: str,
+    target_channel: int=-1
+) -> int:
     """
     Extracts and writes out the embedded subtitles into an SRT file.
     Automatically identifies correct subtitles using preferred lang config.
@@ -42,16 +54,19 @@ def extract_embedded_subs(input_video, output_srt):
         input_video (str | Path): path to the video to extract subs from.
         output_srt (str | Path): path to output SRT subtitle file.
     """
-    sub_channel = identify_dialogue_subs_channel(input_video)
+    sub_channel = target_channel
 
-    if sub_channel is None:
-        print(f"No subtitle channel found for perferred language: {LANGUAGE}")
-        return -1
+    if sub_channel == -1:
+        sub_channel = identify_dialogue_subs_channel(input_video, lang)
 
-    ffmpeg.extract_subtitle_file(input_video, sub_channel, output_srt)
+        if sub_channel is None:
+            print(f"No subtitle channel found for perferred language: {config.LANGUAGE}")
+            return -1
+
+    extract_subtitle_file(input_video, sub_channel, output_srt)
     return sub_channel
 
-def srt_to_seconds(timestamp):
+def srt_to_seconds(timestamp: str) -> float:
     """
     Converts timestamp (str) from 'HH:MM:SS.mmm' (standard SubRip format) 
     to total seconds (float).
@@ -63,14 +78,14 @@ def srt_to_seconds(timestamp):
 
     return int(h) * 3600 + int(m) * 60 + float(s)
 
-def srt_time_interval_to_seconds(intervals):
+def parse_srt_time(intervals: str) -> list[list[float]]:
     """
     Converts a list of SRT timecode pairs into a list of float intervals in seconds.
 
     The input format is expected to be 'HH:MM:SS,mmm' (standard SubRip).
     Each timestamp is converted to its total elapsed time in seconds.
 
-    >>> srt_time_interval_to_seconds([
+    >>> parse_srt_time([
     ...    ['00:00:17,770', '00:00:18,938'], 
     ...    ['00:00:42,127', '00:00:43,921']
     ... ])
@@ -85,7 +100,10 @@ def srt_time_interval_to_seconds(intervals):
     
     return ffmpeg_ts
 
-def find_swear_intervals(srt_file, swears_list):
+def find_swear_intervals(
+    srt_file: str | Path, 
+    swears_list: list[str]
+) -> list[list[float]]:
     """
     Locates time intervals in an SRT file containing profanity.
     Returns a list of [start, end] floats in seconds.
@@ -103,13 +121,17 @@ def find_swear_intervals(srt_file, swears_list):
         subtitle_generator = srt.parse(file)
         subtitles = list(subtitle_generator)
         for sub in subtitles:
-            if search.contains_any(sub.content, swears_list):
+            if contains_any(sub.content, swears_list):
                 swear_timestamps.append([str(sub.start), str(sub.end)])
     
     print(f"Identified {len(swear_timestamps)} swears in subtitles!")
     return swear_timestamps
 
-def clean_subtitles(input_srt, swear_dict, output_srt):
+def clean_subtitles(
+    input_srt: str | Path,
+    swear_dict: dict[str, str],
+    output_srt: str | Path
+) -> None:
     """
     Filters profanity within a SubRip (SRT) file using a replacement dictionary.
 
@@ -128,7 +150,7 @@ def clean_subtitles(input_srt, swear_dict, output_srt):
         subtitles = list(subtitle_generator)
 
     for sub in subtitles:
-        sub.content = search.replace_with_mapping(sub.content, swear_dict, "****")
+        sub.content = replace_with_mapping(sub.content, swear_dict, "****")
     
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))

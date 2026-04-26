@@ -30,8 +30,11 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
         preferred_lang_index = 0
 
         for stream in streams:
-            if stream['tags']['language'] == lang:
+            forced = stream['disposition']['forced'] == 1
+
+            if stream['tags']['language'] == lang and not forced:
                 preferred_lang_index = stream['index']
+                print(f"Found match at subtitle index: {preferred_lang_index}")
                 return preferred_lang_index
     except KeyError:
         print("No subtitle streams were found")
@@ -57,10 +60,11 @@ def extract_embedded_subs(
     sub_channel = target_channel
 
     if sub_channel == -1:
+        print(f"Performing automatic subtitle detection for lang: {lang}")
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
 
         if sub_channel is None:
-            print(f"No subtitle channel found for perferred language: {config.LANGUAGE}")
+            print(f"No subtitle channel found for perferred language: {lang}")
             return -1
 
     extract_subtitle_file(input_video, sub_channel, output_srt)

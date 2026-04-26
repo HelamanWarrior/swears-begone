@@ -1,4 +1,4 @@
-def parse_swears_list(input_file, substitutes=False):
+def parse_swears_list(input_file: str):
     """
     Takes a swears.txt file, where each swear word is seperated by a new line.
     Profanity can have the "|" next to it, which offers a replacement word.

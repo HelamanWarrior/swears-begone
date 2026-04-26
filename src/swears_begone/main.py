@@ -15,6 +15,7 @@ def main(
     device: str,
     lang: str,
     swears_file: str,
+    sub_file: str,
     subs_channel: int,
     export_edl: bool
 ) -> None:
@@ -22,10 +23,14 @@ def main(
 
     tmp = Path(tempfile.mkdtemp())
     output_srt = tmp / f"{Path(input_video).stem}.srt"
-
-    channel = subs.extract_embedded_subs(input_video, output_srt, lang, subs_channel)
-    if channel == -1:
-        return
+    if sub_file != None:
+        # Detect swears in external SRT file
+        output_srt = Path(sub_file)
+    else:
+        # Detect swears in embedded subtitles
+        channel = subs.extract_embedded_subs(input_video, output_srt, lang, subs_channel)
+        if channel == -1:
+            return
 
     # Parsing subtitle segments where swearing is presents
     swears_dict = parse_swears_list(swears_file)

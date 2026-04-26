@@ -23,7 +23,7 @@ def main() -> None:
         '-l',
         '--lang',
         default=config.LANGUAGE,
-        help=f'default language for extracting srt and swears detection (default is "{config.LANGUAGE}")',
+        help=f'language for extracting srt and swears detection (default is "{config.LANGUAGE}")',
         metavar="<language>"
     )
     parser.add_argument(
@@ -34,19 +34,26 @@ def main() -> None:
         metavar="<swears.txt>"
     )
     parser.add_argument(
-        '-s',
+        '-c',
         '--sub_channel',
         default=config.TARGET_SUB_CHANNEL,
-        help='specify a specific subtitle channel index to clean',
+        help='specify a subtitle channel index to clean',
         dest='sub_channel',
         type=int,
         metavar="<sub channel>"
     )
     parser.add_argument(
+        '-s',
+        '--srt_file',
+        help='the subtitle SRT file for swears detection',
+        dest='sub_file',
+        metavar="<sub file>"
+    )
+    parser.add_argument(
         '--cpu', 
         default=config.WHISPER_DEVICE, 
         help='force Whisper to use the CPU backend device', 
-        dest='cpu', 
+        dest='device', 
         action='store_true'
     )
     parser.add_argument(
@@ -61,9 +68,10 @@ def main() -> None:
     swears_begone(
         input_video=args.input,
         model=args.model,
-        device=args.cpu,
+        device=args.device,
         lang=args.lang,
         swears_file=args.swears,
+        sub_file=args.sub_file,
         subs_channel=args.sub_channel,
         export_edl=args.edl
     )

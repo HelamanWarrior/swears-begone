@@ -15,7 +15,8 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
         "ffprobe",
         "-v", "error",
         "-select_streams", "s",
-        "-show_entries", "stream=index:stream_tags=language",
+        "-show_entries", 
+        "stream=index:stream_tags=language,title:disposition=forced,comment,default",
         "-of", "json",
         str(input_video)
     ]

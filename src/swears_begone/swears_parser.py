@@ -1,16 +1,32 @@
-def parse_swears_list(input_file: str):
-    """
-    Takes a swears.txt file, where each swear word is seperated by a new line.
-    Profanity can have the "|" next to it, which offers a replacement word.
-    This word will be used in the subtitles, taking place of the swear word.
+from pathlib import Path
+from importlib import resources
 
-    Returns: list of strings containing each swear word found in the file.
-
-    Args:
-        input_file (str | Path): str to the path of the swears.txt file.
+def parse_swears_list(input_file: str) -> dict[str, str]:
     """
-    swears_list = []
-    with open(str(input_file), "r") as f:
-        items = [line.strip().split("|") for line in f if line.strip()]
-        return {parts[0]: (parts[1] if len(parts) > 1 else "****") for parts in items}
-    return swears_list
+    Parses a swear word mapping from a file. 
+    Format: 'word|replacement' or just 'word' (defaults to ****).
+    """
+    if input_file:
+        # User specified custom swears.txt
+        file_path = Path(input_file)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Custom swears file not found at: {input_file}")
+        cm = file_path.open('r', encoding="utf-8")
+    else:
+        # Default to bundled package resource swears.txt
+        cm = resources.files("swears_begone.data").joinpath("swears.txt").open('r', encoding="utf-8")
+    
+    with cm as f:
+        swears = {}
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            
+            parts = line.split("|", 1)
+            word = parts[0].strip()
+            replacement = parts[1].strip() if len(parts) > 1 else "****"
+
+            swears[word] = replacement
+        
+        return swears

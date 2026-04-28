@@ -11,5 +11,8 @@ dependencies = [
     "srt>=3.5.0"
 ]
 
+[tool.setuptools.package-data]
+"swears_begone" = ["*.txt", "data/*.txt"]
+
 [project.scripts]
 swears-begone = "swears_begone.cli:main"

@@ -1,5 +1,5 @@
 LANGUAGE = "eng"
-SWEARS_FILE = "swears.txt"
+SWEARS_FILE = None
 
 WHISPER_MODEL = "medium.en"
 WHISPER_DEVICE = None

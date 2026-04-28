@@ -34,7 +34,7 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
 
             if stream['tags']['language'] == lang and not forced:
                 preferred_lang_index = stream['index']
-                print(f"Found match at subtitle index: {preferred_lang_index}")
+                print(f"Using subtitle index: {preferred_lang_index}")
                 return preferred_lang_index
     except KeyError:
         print("No subtitle streams were found")

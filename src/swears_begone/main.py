@@ -30,9 +30,10 @@ def main(
         # Detect swears in embedded subtitles
         channel = subs.extract_embedded_subs(input_video, output_srt, lang, subs_channel)
         if channel == -1:
-            return
+            print("Attempting to download subtitles from online...")
+            output_srt = subs.download_subtitle(input_video, lang)
 
-    # Parsing subtitle segments where swearing is presents
+    # Parsing subtitle segments where swearing is present
     swears_dict = parse_swears_list(swears_file)
     swears_list = list(swears_dict)
 

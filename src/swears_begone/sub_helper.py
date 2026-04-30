@@ -1,7 +1,9 @@
 import srt
 import json
 import subprocess
+import subliminal
 from pathlib import Path
+from babelfish import Language
 
 from swears_begone.ffmpeg_helper import (
     ffprobe_subs_metadata,
@@ -64,7 +66,7 @@ def extract_embedded_subs(
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
 
         if sub_channel is None:
-            print(f"No subtitle channel found for perferred language: {lang}")
+            print(f"No subtitle channel found for perferred language.")
             return -1
 
     extract_subtitle_file(input_video, sub_channel, output_srt)
@@ -158,3 +160,22 @@ def clean_subtitles(
     
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))
+
+def download_subtitle(video: str | Path, lang: str) -> Path:
+    video_path = Path(video)
+
+    video = subliminal.scan_video(str(video_path))
+    subtitles = subliminal.download_best_subtitles({video}, {Language(lang)})
+
+    if not subtitles.get(video):
+        raise FileNotFoundError(f"No subtitles found for {video_path.name}")
+    
+    print(f"Subtitle search target: {video.title} ({video.year})")
+
+    best_sub = subtitles[video][0]
+    output_srt = video_path.with_suffix('.srt')
+
+    with open(output_srt, 'w', encoding='utf-8') as f:
+        f.write(best_sub.text)
+    
+    return output_srt

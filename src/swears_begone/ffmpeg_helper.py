@@ -18,7 +18,7 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     cmd.extend([
         "-select_streams", "s",
         "-show_entries", 
-        "stream=index:stream_tags=language,title:disposition=forced,comment,default",
+        "stream=index,codec_name:stream_tags=language,title:disposition=forced,comment,default",
         "-of", "json",
         str(input_video)
     ])
@@ -71,6 +71,12 @@ def detect_audio_info(input_video: str) -> dict[str, str | int]:
         for line in stdout.strip().split("\n")
         for key, value in [line.split("=", 1)]
     }
+
+    if audio_info.get('bit_rate') == "N/A":
+        audio_info['bit_rate'] = None
+    if audio_info.get('codec_name') == 'truehd':
+        audio_info['bit_rate'] = "flac"
+
     return audio_info
 
 def extract_audio_dialogue_file(
@@ -184,9 +190,11 @@ def export_cleaned_video(
     cmd.extend([
         "-c:v", "copy",
         "-c:a", audio_info['codec_name'],
-        "-ac", audio_info['channels'],
-        "-b:a", audio_info['bit_rate'],
+        "-ac", audio_info['channels']
     ])
+
+    if audio_info.get('bit_rate'):
+        cmd.extend(["-b:a", audio_info['bit_rate']])
 
     if embed_subs is not None:
         cmd.extend([

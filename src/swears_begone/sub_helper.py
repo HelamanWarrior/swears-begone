@@ -4,7 +4,6 @@ import subprocess
 import subliminal
 from pathlib import Path
 from babelfish import Language
-
 from swears_begone.ffmpeg_helper import (
     ffprobe_subs_metadata,
     extract_subtitle_file
@@ -13,6 +12,8 @@ from swears_begone.search import (
     contains_any,
     replace_with_mapping
 )
+
+IMAGE_CODECS = ["hdmv_pgs_subtitle", "dvd_subtitle", "dvdsub", "pgssub"]
 
 def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     """
@@ -27,20 +28,24 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     stdout = ffprobe_subs_metadata(input_video)
     video_info = json.loads(stdout)
 
-    try:
-        streams = video_info['streams']
-        preferred_lang_index = 0
+    valid_text_subs = [
+        s for s in video_info['streams']
+        if s.get("codec_name") not in IMAGE_CODECS
+    ]
 
-        for stream in streams:
-            forced = stream['disposition']['forced'] == 1
-
-            if stream['tags']['language'] == lang and not forced:
-                preferred_lang_index = stream['index']
-                print(f"Using subtitle index: {preferred_lang_index}")
-                return preferred_lang_index
-    except KeyError:
-        print("No subtitle streams were found")
+    if not valid_text_subs:
+        print("No text-based subtitles found. Skipping subtitle extraction.")
         return None
+
+    preferred_lang_index = 0
+
+    for stream in valid_text_subs:
+        forced = stream['disposition']['forced'] == 1
+
+        if stream['tags']['language'] == lang and not forced:
+            preferred_lang_index = stream['index']
+            print(f"Using subtitle index: {preferred_lang_index}")
+            return preferred_lang_index
 
 def extract_embedded_subs(
     input_video: str | Path,

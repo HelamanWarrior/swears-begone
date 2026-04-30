@@ -75,7 +75,7 @@ def detect_audio_info(input_video: str) -> dict[str, str | int]:
     if audio_info.get('bit_rate') == "N/A":
         audio_info['bit_rate'] = None
     if audio_info.get('codec_name') == 'truehd':
-        audio_info['bit_rate'] = "flac"
+        audio_info['codec_name'] = "flac"
 
     return audio_info
 

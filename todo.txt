@@ -1,3 +1,1 @@
-- make a subtitle selection screen
-- user manually picks the subtitle channel to run off of
-- if it doesn't exist, allow user to select an SRT file
+- support .mp4 containers with MOV_TEXT for subtitles

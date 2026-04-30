@@ -1,6 +1,9 @@
 import subprocess
 from pathlib import Path
 
+FFMPEG_BASE_CMD = ("ffmpeg", "-y", "-hide_banner", "-loglevel", "error")
+FFPROBE_BASE_CMD = ("ffprobe", "-v", "error")
+
 def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     """
     Retrieves subtitle stream metadata from a video file using ffprobe.
@@ -11,15 +14,14 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     Args:
         input_video (str | Path): Path to the video file to be analyzed.
     """
-    cmd = [
-        "ffprobe",
-        "-v", "error",
+    cmd = list(FFPROBE_BASE_CMD)
+    cmd.extend([
         "-select_streams", "s",
         "-show_entries", 
         "stream=index:stream_tags=language,title:disposition=forced,comment,default",
         "-of", "json",
         str(input_video)
-    ]
+    ])
     return subprocess.check_output(cmd)
 
 def extract_subtitle_file(
@@ -35,16 +37,14 @@ def extract_subtitle_file(
         sub_channel (int | str): The index of the subtitle stream (e.g., 0, 1, 2)
         output_srt (str): Destinatino path forr the extracted .srt file.
     """
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-hide_banner",
-        "-loglevel", "error",
+    cmd = list(FFMPEG_BASE_CMD)
+    cmd.extend([
         "-i", str(input_video),
         "-c:s", "subrip",
         "-map", f"0:{sub_channel}",
         str(output_srt)
-    ]
+    ])
+
     subprocess.run(cmd, check=True)
 
 def detect_audio_info(input_video: str) -> dict[str, str | int]:
@@ -56,16 +56,15 @@ def detect_audio_info(input_video: str) -> dict[str, str | int]:
     Args:
         input_video (str | Path): Path to the source video for audio detection.
     """
-    cmd = [
-        "ffprobe",
-        "-v", "error",
+    cmd = list(FFPROBE_BASE_CMD)
+    cmd.extend([
         "-select_streams", "a:0",
         "-show_entries",
         "stream=codec_name,bit_rate,channels",
         "-of",
         "default=noprint_wrappers=1",
         str(input_video)
-    ]
+    ])
     stdout = subprocess.check_output(cmd).decode()
     audio_info = {
         key: value
@@ -90,12 +89,7 @@ def extract_audio_dialogue_file(
         output_audio (str | Path): Path to save the output audio file.
         start, end (float|str): a duration of seconds.
     """
-    cmd = [
-        "ffmpeg",
-        "-y", 
-        "-hide_banner", 
-        "-loglevel", "error"
-    ]
+    cmd = list(FFMPEG_BASE_CMD)
 
     if start is not None:
         cmd.extend(["-ss", str(start)])
@@ -132,7 +126,7 @@ def extract_audio_segments(
         start, end = interval[0], interval[1]
         extract_audio_dialogue_file(input_video, audio_file, start, end)
 
-def mute_filter(s: dict[str, float]) -> str:
+def mute_filter(s: dict[str, float | str]) -> str:
     """
     Creates an ffmpeg mute filter command for a segment of time.
 
@@ -145,7 +139,7 @@ def mute_filter(s: dict[str, float]) -> str:
 
 def export_cleaned_video(
     input_video: str | Path,
-    mute_segments: dict[str, float],
+    mute_segments: dict[str, float | str],
     lang: str,
     embed_subs: str | Path=None
 ) -> None:
@@ -167,7 +161,8 @@ def export_cleaned_video(
     
     print(f"Exporting: {output_video}")
 
-    cmd = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(input_video)]
+    cmd = list(FFMPEG_BASE_CMD)
+    cmd.extend(['-i', str(input_video)])
 
     if embed_subs is not None:
         cmd.extend(['-i', str(embed_subs)])
@@ -179,7 +174,7 @@ def export_cleaned_video(
 
     if embed_subs is not None:
         cmd.extend([
-            "-map", "1:0",      # Map clean subs first
+            "-map", "1:0",      # Map only clean subs
             #"-map", "0:s?",     # Map all existing subs
         ])
     else:
@@ -208,7 +203,7 @@ def export_cleaned_video(
     subprocess.run(cmd, check=True)
     print("\u2714 Successfully sanitized. This video is now safe for Sunday School!")
 
-def write_edl_file(mute_segments: dict[str, float], output_edl: str | Path) -> None:
+def write_edl_file(mute_segments: dict[str, float | str], output_edl: str | Path) -> None:
     """
     Creates an EDL (Edit decision list) file, containing the segments to mute the audio.
 

@@ -6,7 +6,8 @@ from pathlib import Path
 from babelfish import Language
 from swears_begone.ffmpeg_helper import (
     ffprobe_subs_metadata,
-    extract_subtitle_file
+    extract_subtitle_file,
+    extract_audio_dialogue_file
 )
 from swears_begone.search import (
     contains_any,
@@ -71,7 +72,7 @@ def extract_embedded_subs(
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
 
         if sub_channel is None:
-            print(f"No subtitle channel found for perferred language.")
+            print(f"- No subtitle channel found for perferred language.")
             return -1
 
     extract_subtitle_file(input_video, sub_channel, output_srt)
@@ -89,7 +90,7 @@ def srt_to_seconds(timestamp: str) -> float:
 
     return int(h) * 3600 + int(m) * 60 + float(s)
 
-def parse_srt_time(intervals: str) -> list[list[float]]:
+def parse_srt_time(intervals: str, padding: int = 0) -> list[list[float]]:
     """
     Converts a list of SRT timecode pairs into a list of float intervals in seconds.
 
@@ -105,8 +106,8 @@ def parse_srt_time(intervals: str) -> list[list[float]]:
     ffmpeg_ts = []
 
     for ts_start, ts_end in intervals:
-        seconds_start = srt_to_seconds(ts_start)
-        seconds_end = srt_to_seconds(ts_end)
+        seconds_start = srt_to_seconds(ts_start) - padding
+        seconds_end = srt_to_seconds(ts_end) + padding
         ffmpeg_ts.append([seconds_start, seconds_end])
     
     return ffmpeg_ts
@@ -175,7 +176,7 @@ def download_subtitle(video: str | Path, lang: str) -> Path:
     if not subtitles.get(video):
         raise FileNotFoundError(f"No subtitles found for {video_path.name}")
     
-    print(f"Subtitle search target: {video.title} ({video.year})")
+    print(f"- Subtitle search target: {video.title} ({video.year})")
 
     best_sub = subtitles[video][0]
     output_srt = video_path.with_suffix('.srt')

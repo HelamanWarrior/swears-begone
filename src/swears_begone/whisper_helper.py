@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import whisper_timestamped as whisper
 from swears_begone.search import contains_any
 
@@ -14,16 +13,18 @@ def load_model(model: str, device=None) -> whisper.model:
     """
     return whisper.load_model(model, device=device)
 
-def transcribe_wordlevel_audio(audio_file: Path, model: whisper.model, lang: str) -> dict:
+def transcribe_wordlevel_audio(
+    audio_file: str | Path,
+    model: whisper.model,
+    lang: str
+) -> dict:
     """
-    Uses Whisper to transcribe word-level audio of a perferred language.
+    Uses Whisper to transcribe word-level audio of a preferred language.
 
     Args:
         audio_file (str | Path): path to audio file to transcribe.
         model: loaded Whisper model object
     """
-    print(f"Transcribing {audio_file}...")
-
     audio = whisper.load_audio(str(audio_file))
     result = whisper.transcribe(
         model,
@@ -59,13 +60,14 @@ def transcribe_swear_audio_segments(
 
     for i, segment in enumerate(segments):
         audio_file = audio_dir / f"audio_{i}.wav"
+        print(f"Transcribing {audio_file}...")
         start_offset = segment[0]
 
         raw_data = transcribe_wordlevel_audio(audio_file, model, lang)
         word_timestamps = parse_whisper_swear_timestamps(raw_data, swears_list)
 
-        """Aligns Whisper's segment-relative timestamps with the global video timeline
-        by applying the segment's start offset."""
+        # Aligns Whisper's segment-relative timestamps with the global video timeline
+        # by applying the segment's start offset.
         for entry in word_timestamps:
             for key in ('start', 'end'):
                 entry[key] = round(entry[key] + start_offset, 3)
@@ -77,7 +79,7 @@ def transcribe_swear_audio_segments(
 def parse_whisper_swear_timestamps(
     transcript: dict,
     swears_list: list[str],
-    padding: tuple=(0.05, 0.08)
+    padding: tuple = (0.05, 0.08)
 ) -> list[dict]:
     """
     Looks at a whisper word-level audio transcript and filters it only to the 

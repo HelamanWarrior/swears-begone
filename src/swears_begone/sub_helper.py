@@ -19,10 +19,12 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     Given a video (path), identifies the which channel the subtitles are found on.
     It identifies the first subtitle stream matching the preferred lang config.
 
-    Returns: int (channel number), None (if no compatible subtitle channel found).
-
     Args:
         input_video (str | path): Source video for identifying subtitle channel.
+    
+    Returns: 
+        Compatible subtitle channel number, 
+        None (if no compatible subtitle channel found).
     """
     stdout = ffprobe_subs_metadata(input_video)
     video_info = json.loads(stdout)
@@ -56,12 +58,13 @@ def extract_embedded_subs(
     Extracts and writes out the embedded subtitles into an SRT file.
     Automatically identifies correct subtitles using preferred lang config.
 
-    Returns: (int) channel of extracted subtitle stream.
-        -1 if no subtitle stream was detected.
-
     Args:
-        input_video (str | Path): path to the video to extract subs from.
-        output_srt (str | Path): path to output SRT subtitle file.
+        input_video: Path to the video to extract subs from.
+        output_srt: Path to output SRT subtitle file.
+
+    Returns:
+        Channel of extracted subtitle stream.
+        -1 if no subtitle stream was detected.
     """
     sub_channel = target_channel
 
@@ -88,12 +91,16 @@ def srt_to_seconds(timestamp: str) -> float:
 
     return int(h) * 3600 + int(m) * 60 + float(s)
 
-def parse_srt_time(intervals: str, padding: int = 0) -> list[list[float]]:
+def parse_srt_time(intervals: str, padding: float = 0) -> list[list[float]]:
     """
     Converts a list of SRT timecode pairs into a list of float intervals in seconds.
 
     The input format is expected to be 'HH:MM:SS,mmm' (standard SubRip).
     Each timestamp is converted to its total elapsed time in seconds.
+
+    Args:
+        intervals: A list of [start, end] string timestamps (e.g., '00:00:17,770').
+        padding (optional): Seconds to extend the start and end of each segment.
 
     >>> parse_srt_time([
     ...    ['00:00:17,770', '00:00:18,938'], 
@@ -116,14 +123,14 @@ def find_swear_intervals(
 ) -> list[list[float]]:
     """
     Locates time intervals in an SRT file containing profanity.
-    Returns a list of [start, end] floats in seconds.
 
     Args:
-        srt_file (str | Path): subtitle file for swear interval detection.
-        swears_list: a list of swear words (str) to filter out.
+        srt_file: A subtitle file used to quickly detect swear segments in audio.
+        swears_list: A list of swear words to filter out.
 
-    Example output:
-        [[183.75, 188.62], [273.23, 276.46]]
+    Returns:
+        A list of intervals in seconds containing profanity.
+        e.g., [[183.75, 188.62], [273.23, 276.46]]
     """
     swear_timestamps = []
 
@@ -149,10 +156,10 @@ def clean_subtitles(
     generic mask ("****") or a specific substitute provided in the `swear_dict`.
 
     Args:
-        input_srt (str | Path): Path to the subrip file to filter.
-        swear_dict (dict): A mapping where keys are profanities (str) and
-            values are their intended replacements (str).
-        output_srt (str | Path): Path to the resultant filtered SRT file.
+        input_srt: Path to the subrip file to filter.
+        swear_dict: A mapping where keys are profanities and
+            values are their intended replacements.
+        output_srt: Path to the resultant filtered SRT file.
     """
     subtitles = []
     with open(str(input_srt), 'r') as f:

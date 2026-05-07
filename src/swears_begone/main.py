@@ -23,6 +23,7 @@ def main(
 
     tmp = Path(tempfile.mkdtemp())
     output_srt = tmp / f"{Path(input_video).stem}.srt"
+
     if sub_file != None:
         # Detect swears in external SRT file
         output_srt = Path(sub_file)

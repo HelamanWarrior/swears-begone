@@ -5,6 +5,12 @@ def parse_swears_list(input_file: str) -> dict[str, str]:
     """
     Parses a swear word mapping from a file. 
     Format: 'word|replacement' or just 'word' (defaults to ****).
+
+    Args:
+        input_file: Path to the swears.txt file.
+    
+    Returns:
+        A dictionary containing swears as keys and replacments as values.
     """
     if input_file:
         # User specified custom swears.txt

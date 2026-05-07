@@ -9,11 +9,11 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     """
     Retrieves subtitle stream metadata from a video file using ffprobe.
 
-    Returns:
-        bytes: A JSON-formatted byte string containing stream indices and language tags.
-
     Args:
-        input_video (str | Path): Path to the video file to be analyzed.
+        input_video: Path to the video file to be analyzed.
+
+    Returns:
+        A JSON-formatted byte string containing stream indices and language tags.
     """
     cmd = list(FFPROBE_BASE_CMD)
     cmd.extend([
@@ -34,9 +34,9 @@ def extract_subtitle_file(
     Extracts a specific subtitle stream from a video file and saves it as an SRT.
 
     Args:
-        input_video (str | Path): Path to the source video file.
-        sub_channel (int | str): The index of the subtitle stream (e.g., 0, 1, 2)
-        output_srt (str): Destinatino path forr the extracted .srt file.
+        input_video: Path to the source video file.
+        sub_channel: The index of the subtitle stream (e.g., 0, 1, 2)
+        output_srt: Destination path for the extracted .srt file.
     """
     cmd = list(FFMPEG_BASE_CMD)
     cmd.extend([
@@ -52,10 +52,12 @@ def detect_audio_info(input_video: str) -> dict[str, str | int]:
     """
     Given an input_video detects the audio information.
 
-    Returns (dict): {'codec_name', 'channels', 'bitrate'}
-
     Args:
-        input_video (str | Path): Path to the source video for audio detection.
+        input_video: Path to the source video for audio detection.
+
+    Returns: 
+        A Dictionary containing, codec_name, channels, and bitrate. 
+        {'codec_name', 'channels', 'bitrate'}
     """
     cmd = list(FFPROBE_BASE_CMD)
     cmd.extend([

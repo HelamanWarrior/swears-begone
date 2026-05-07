@@ -1,20 +1,35 @@
 import re
 
-def contains_any(text, items):
+def contains_any(text: str, items: list[str]) -> bool:
+    """
+    Determines whether any item in a list is found in a text string.
+
+    Args:
+        text: A string.
+        items: A list of strings.
+
+    Returns:
+        True if any item is found within the text, False otherwise.
+    """
     pattern = r'\b(' + '|'.join(re.escape(item) for item in items) + r')\b'
     return re.search(pattern, text, re.IGNORECASE) is not None
 
-def replace_with_mapping(text, substitutions, default=""):
+def replace_with_mapping(
+    text: str,
+    substitutions: dict[str, str],
+    default: str = ""
+) -> str:
     """
     Replaces occurrences of keys in 'substitutions' with their corresponding values.
 
-    Returns: (str) with substituted text applied.
-
     Args:
-        text (str): input text to match with replacement.
-        substitutions (dict): each key (str) found in the text, 
-            is substituted with the corresponding key value (str). 
-        default (str): str to substitute if no value is assigned to key.
+        textinput text to match with replacement.
+        substitutions: A dictionary where each key (str) found in the text, 
+            is substituted with the corresponding key value.
+        default: Str to substitute if no value is assigned to key.
+
+    Returns: 
+        A string with substituted text applied.
     """
     if not substitutions:
         return text

@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /build
 
-COPY pyproject.toml swears.txt .
+COPY pyproject.toml .
 COPY src/ ./src/
 
 RUN pip install --upgrade pip && \

@@ -3,6 +3,7 @@ from pathlib import Path
 
 FFMPEG_BASE_CMD = ("ffmpeg", "-y", "-hide_banner", "-loglevel", "error")
 FFPROBE_BASE_CMD = ("ffprobe", "-v", "error")
+EXPERIMENTAL_AUDIO_CODECS = ["truehd", "dca", "dts"]
 
 def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     """
@@ -74,7 +75,7 @@ def detect_audio_info(input_video: str) -> dict[str, str | int]:
 
     if audio_info.get('bit_rate') == "N/A":
         audio_info['bit_rate'] = None
-    if audio_info.get('codec_name') == 'truehd':
+    if audio_info.get('codec_name') in EXPERIMENTAL_AUDIO_CODECS:
         audio_info['codec_name'] = "flac"
 
     return audio_info
@@ -126,14 +127,17 @@ def extract_audio_segments(
         intervals (list): list of [start, stop] second interval lists.
         output_dir (str | Path): Path to the directory for extracted audio.
     """
+    interval_amount = len(intervals)
     for i, interval in enumerate(intervals):
         audio_file = Path(output_dir) / f"audio_{i}.wav"
-        print(f"Extracting audio segment {i+1}: {audio_file}")
+        print(f"\r- Extracting swear audio segments ({i + 1}/{interval_amount})", end='')
 
         start, end = interval[0], interval[1]
         duration = end - start
         
         extract_audio_dialogue_file(input_video, audio_file, start, duration)
+    # Ensure a new line is created
+    print()
 
 def mute_filter(s: dict[str, float | str]) -> str:
     """

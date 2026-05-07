@@ -199,8 +199,9 @@ def clean_subtitles(
 
 def download_subtitle(video: str | Path, lang: str) -> Path:
     import subliminal
-    video_path = Path(video)
+    from babelfish import Language
 
+    video_path = Path(video)
     video = subliminal.scan_video(str(video_path))
     subtitles = subliminal.download_best_subtitles({video}, {Language(lang)})
 

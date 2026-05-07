@@ -50,6 +50,14 @@ def main() -> None:
         metavar="<sub file>"
     )
     parser.add_argument(
+        '-e',
+        '--embed-subs',
+        default=config.EMBED_SUBS,
+        help='embed subtitles in resulting video file',
+        dest='embed_subs',
+        action='store_true',
+    )
+    parser.add_argument(
         '--cpu', 
         default=config.WHISPER_DEVICE, 
         help='force Whisper to use the CPU backend device', 
@@ -73,6 +81,7 @@ def main() -> None:
         swears_file=args.swears,
         sub_file=args.sub_file,
         subs_channel=args.sub_channel,
+        embed_subs=args.embed_subs,
         export_edl=args.edl
     )
 

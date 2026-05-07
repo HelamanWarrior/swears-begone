@@ -79,6 +79,31 @@ def extract_embedded_subs(
     extract_subtitle_file(input_video, sub_channel, output_srt)
     return sub_channel
 
+def resolve_subtitle_path(
+    input_video: Path,
+    external_sub: Path | None,
+    target_channel: int,
+    lang: str,
+    tmp: Path 
+) -> Path:
+    output_srt = tmp / Path(input_video).with_suffix(f".{lang}.srt")
+
+    if external_sub:
+        print(f"Using external subtitle file: {external_sub}")
+        return Path(external_sub)
+    
+    # Attempt extraction
+    channel = extract_embedded_subs(input_video, output_srt, lang, target_channel)
+
+    if channel == -1:
+        print("Embedded subs not found. Attempting download subtitles online...")
+        output_srt = download_subtitle(input_video, lang)
+    
+    if not output_srt.exists():
+        raise FileNotFoundError(f"Could not resolve subtitles for {input_video}")
+    
+    return output_srt
+
 def srt_to_seconds(timestamp: str) -> float:
     """
     Converts timestamp (str) from 'HH:MM:SS.mmm' (standard SubRip format) 

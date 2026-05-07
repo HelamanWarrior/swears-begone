@@ -5,4 +5,6 @@ WHISPER_MODEL = "medium.en"
 WHISPER_DEVICE = None
 
 CREATE_EDL = False
+
 TARGET_SUB_CHANNEL = -1
+EMBED_SUBS = False

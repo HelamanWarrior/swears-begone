@@ -156,15 +156,15 @@ def export_cleaned_video(
     input_video: str | Path,
     mute_segments: dict[str, float | str],
     lang: str,
-    embed_subs: str | Path=None
+    embed_subs: str | Path = None
 ) -> None:
     """
     Creates the final filtered version of the video, with profanity segments muted.
     The resultant video is saved with "-clean" appended to the filename.
 
     Args:
-        input_video (str | Path): Path to the input video.
-        mute_segments (dict): contains {'start', 'end'} keys in float seconds.
+        input_video: Path to the input video.
+        mute_segments: A Dictionary containing {'start', 'end'} keys in float seconds.
     """
     mute_cmds = [mute_filter(segment) for segment in mute_segments]
     audio_filter = ",".join(mute_cmds)
@@ -192,9 +192,9 @@ def export_cleaned_video(
             "-map", "1:0",      # Map only clean subs
             #"-map", "0:s?",     # Map all existing subs
         ])
-    else:
+    #else:
         # If no new subs, just keep original ones
-        cmd.extend(["-map", "0:s:?"])
+    #    cmd.extend(["-map", "0:s:?"])
     
     cmd.extend([
         "-c:v", "copy",
@@ -237,4 +237,4 @@ def write_edl_file(mute_segments: dict[str, float | str], output_edl: str | Path
     with open(str(output_edl), 'w') as f:
         f.writelines(lines)
     
-    print(f"Written {output_edl}!\nUse this file with Kodi or MPlayer, if you wish to preserve the original file.")
+    print(f"Written {output_edl}!\n- Use this file with Kodi or MPlayer, if you wish to preserve the original file.")

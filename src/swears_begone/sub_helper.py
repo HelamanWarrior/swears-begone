@@ -1,9 +1,7 @@
 import srt
 import json
 import subprocess
-import subliminal
 from pathlib import Path
-from babelfish import Language
 from swears_begone.ffmpeg_helper import (
     ffprobe_subs_metadata,
     extract_subtitle_file,
@@ -19,7 +17,7 @@ IMAGE_CODECS = ["hdmv_pgs_subtitle", "dvd_subtitle", "dvdsub", "pgssub"]
 def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     """
     Given a video (path), identifies the which channel the subtitles are found on.
-    It identifies the first subtitle stream matching the perferred lang config.
+    It identifies the first subtitle stream matching the preferred lang config.
 
     Returns: int (channel number), None (if no compatible subtitle channel found).
 
@@ -45,7 +43,7 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
 
         if stream['tags']['language'] == lang and not forced:
             preferred_lang_index = stream['index']
-            print(f"Using subtitle index: {preferred_lang_index}")
+            print(f"- Using subtitle index: {preferred_lang_index}")
             return preferred_lang_index
 
 def extract_embedded_subs(
@@ -72,7 +70,7 @@ def extract_embedded_subs(
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
 
         if sub_channel is None:
-            print(f"- No subtitle channel found for perferred language.")
+            print(f"- No subtitle channel found for preferred language.")
             return -1
 
     extract_subtitle_file(input_video, sub_channel, output_srt)
@@ -168,6 +166,7 @@ def clean_subtitles(
         f.writelines(srt.compose(subtitles))
 
 def download_subtitle(video: str | Path, lang: str) -> Path:
+    import subliminal
     video_path = Path(video)
 
     video = subliminal.scan_video(str(video_path))

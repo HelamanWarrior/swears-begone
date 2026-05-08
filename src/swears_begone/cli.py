@@ -45,7 +45,7 @@ def main() -> None:
     parser.add_argument(
         '-s',
         '--srt_file',
-        help='the subtitle SRT file for swears detection',
+        help='external subtitle SRT file for swears detection',
         dest='sub_file',
         metavar="<sub file>"
     )

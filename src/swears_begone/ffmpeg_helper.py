@@ -138,7 +138,6 @@ def extract_audio_segments(
         duration = end - start
         
         extract_audio_dialogue_file(input_video, audio_file, start, duration)
-    # Ensure a new line is created
     print()
 
 def mute_filter(s: dict[str, float | str]) -> str:
@@ -169,10 +168,10 @@ def export_cleaned_video(
     mute_cmds = [mute_filter(segment) for segment in mute_segments]
     audio_filter = ",".join(mute_cmds)
 
-    audio_info = detect_audio_info(input_video)
-
     path = Path(input_video)
-    output_video = path.parent.resolve() / f"{path.stem}-cleaned{path.suffix}"
+    video_container = path.suffix
+    output_video = path.parent.resolve() / f"{path.stem}-cleaned{video_container}"
+    audio_info = detect_audio_info(input_video)
     
     print(f"Exporting: {output_video}")
 
@@ -205,10 +204,14 @@ def export_cleaned_video(
     if audio_info.get('bit_rate'):
         cmd.extend(["-b:a", audio_info['bit_rate']])
 
+    sub_format = "srt"
+    if video_container.lower() == ".mp4":
+        sub_format = "mov_text"
+
     if embed_subs is not None:
         cmd.extend([
             "-c:s", "copy",
-            "-c:s:0", "srt",
+            "-c:s:0", sub_format,
             "-metadata:s:s:0", f"language={lang}",
             "-metadata:s:s:0", f"title=Cleaned {lang}",
             "-disposition:s:0", "default",

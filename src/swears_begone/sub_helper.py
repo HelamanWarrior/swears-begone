@@ -35,7 +35,7 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     ]
 
     if not valid_text_subs:
-        print("No text-based subtitles found. Skipping subtitle extraction.")
+        print("- No text-based subtitles found. Skipping subtitle extraction.")
         return None
 
     preferred_lang_index = 0
@@ -97,7 +97,7 @@ def resolve_subtitle_path(
 
     if channel == -1:
         print("Embedded subs not found. Attempting download subtitles online...")
-        output_srt = download_subtitle(input_video, lang)
+        output_srt = download_subtitle(input_video, lang, output_dir=tmp)
     
     if not output_srt.exists():
         raise FileNotFoundError(f"Could not resolve subtitles for {input_video}")
@@ -197,7 +197,20 @@ def clean_subtitles(
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))
 
-def download_subtitle(video: str | Path, lang: str) -> Path:
+def download_subtitle(
+    video: str | Path,
+    lang: str,
+    output_dir: Path | None = None
+) -> Path:
+    """
+    Uses Subliminal to download the best matching language subtitle for video.
+
+    Args:
+        video: Path to the video to download matching subtitles.
+        lang: Language to download subtitles in.
+        output_dir (optional): Directory to store downloaded subtitle file.
+            If None, subtitles are stored in same directory as video.
+    """
     import subliminal
     from babelfish import Language
 
@@ -212,6 +225,8 @@ def download_subtitle(video: str | Path, lang: str) -> Path:
 
     best_sub = subtitles[video][0]
     output_srt = video_path.with_suffix('.srt')
+    if output_dir:
+        output_srt = output_dir / f"{video_path.stem}.srt"
 
     with open(output_srt, 'w', encoding='utf-8') as f:
         f.write(best_sub.text)

@@ -1,5 +1,7 @@
 import re
 
+PUNCT = r'[.,\/#!$%\^&\*;:{}=\-_`~()!?\s]'
+
 def contains_any(text: str, items: list[str]) -> bool:
     """
     Determines whether any item in a list is found in a text string.
@@ -11,7 +13,7 @@ def contains_any(text: str, items: list[str]) -> bool:
     Returns:
         True if any item is found within the text, False otherwise.
     """
-    pattern = r'\b(' + '|'.join(re.escape(item) for item in items) + r')\b'
+    pattern = r'(?:^|' + PUNCT + r')(' + '|'.join(re.escape(item) for item in items) + r')(?:$|' + PUNCT + r')'
     return re.search(pattern, text, re.IGNORECASE) is not None
 
 def replace_with_mapping(
@@ -36,11 +38,16 @@ def replace_with_mapping(
     
     # Sort by length (descending) to ensure that whole words are matched and not just partials
     sorted_keys = sorted(substitutions.keys(), key=len, reverse=True)
-    pattern = r'\b(' + "|".join(re.escape(key) for key in sorted_keys) + r')\b'
+
+    pattern = r'(^|' + PUNCT + r')(' + "|".join(re.escape(key) for key in sorted_keys) + r')($|' + PUNCT + r')'
 
     # Gets the replacement key value to the corresponding swear
     def make_replacement(match):
-        swear_word = match.group(0)
-        return substitutions.get(swear_word.lower(), default)
+        prefix = match.group(1)
+        swear_word = match.group(2).lower()
+        suffix = match.group(3)
+
+        replaced_word = substitutions.get(swear_word, default)
+        return f"{prefix}{replaced_word}{suffix}"
     
     return re.sub(pattern, make_replacement, text, flags=re.IGNORECASE)

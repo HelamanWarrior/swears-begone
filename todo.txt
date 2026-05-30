@@ -1,1 +1,3 @@
-- support .mp4 containers with MOV_TEXT for subtitles
+- automatically align downloaded subtitles to audio
+- consider switching to whisperx backend for better percision and speed
+- handle File is broken, keyframes not correctly marked! errors correctly

@@ -1,22 +1,23 @@
 from pathlib import Path
-import whisper_timestamped as whisper
+import whisperx as whisper
 from swears_begone.search import contains_any
 
-def load_model(model: str, device = None) -> whisper.model:
+def load_model(model: str, device = None):
     """
     Loads Whisper model into memory, ready for action!
 
     Args:
         model: Whisper model to use. (e.g., 'tiny', 'medium.en', 'large-v3', ...)
         device: Hardware device to run model on. ('cpu', 'cuda')
-            If None, use CUDA if available, otherwise CPU.
     """
-    return whisper.load_model(model, device=device)
+    return whisper.load_model(model, device=device, compute_type="float16")
 
 def transcribe_wordlevel_audio(
     audio_file: str | Path,
-    model: whisper.model,
-    lang: str
+    model,
+    lang: str,
+    device = None,
+    batch_size: int = 16
 ) -> dict:
     """
     Uses Whisper to transcribe word-level audio of a preferred language.
@@ -26,15 +27,14 @@ def transcribe_wordlevel_audio(
         model: Loaded Whisper model object
     """
     audio = whisper.load_audio(str(audio_file))
-    result = whisper.transcribe(
-        model,
-        audio,
-        beam_size=5,
-        temperature=0.0,
-        refine_whisper_precision=0.04,
-        detect_disfluencies=True,
-        language=lang[:-1]
-    )
+    result = model.transcribe(audio, batch_size=batch_size)
+
+    # Align whisper timestamps
+    model_a, metadata = whisper.load_align_model(language_code=result["language"], device=device)
+    result = whisper.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
+
+    print(result["segments"])
+
     return result
 
 def transcribe_swear_audio_segments(
@@ -93,19 +93,19 @@ def parse_whisper_swear_timestamps(
         swears_list: A list of strings to identify word-level timestamps for.
     
     Returns: 
-        A list of dictionaries [{word, start, end, confidence}, ...]
+        A list of dictionaries [{word, start, end, score}, ...]
     """
     word_timestamps = []
 
     for segment in transcript["segments"]:
         for word in segment.get("words", []):
-            if not contains_any(word["text"], swears_list):
+            if not contains_any(word["word"], swears_list):
                 continue
             word_timestamps.append({
-                "word": word["text"],
+                "word": word["word"],
                 "start": float(word["start"]) - padding[0],
                 "end": float(word["end"]) + padding[1],
-                "confidence": word["confidence"]
+                "score": word["score"]
             })
     
     return word_timestamps

@@ -7,7 +7,7 @@ name = "swears-begone"
 version = "0.1.0"
 description = "A CLI tool for filtering profanity from videos with Whisper"
 dependencies = [
-    "whisper-timestamped>=1.15.9",
+    "whisperx",
     "srt>=3.5.0",
     "subliminal>=2.0.0"
 ]

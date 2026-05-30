@@ -1,6 +1,6 @@
 import re
 
-PUNCT = r'[.,\/#!$%\^&\*;:{}=\-_`~()!?\s]'
+PUNCT = r'[.,\/#!$%\^&\*;:{}=\-_`~()!?\s\"\'’]'
 
 def contains_any(text: str, items: list[str]) -> bool:
     """

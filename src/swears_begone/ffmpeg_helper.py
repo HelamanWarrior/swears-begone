@@ -109,7 +109,7 @@ def extract_audio_dialogue_file(
     cmd.extend([
         "-i", str(input_video),
         "-map", "0:a:0",
-        "-af", "pan=mono|c0=c2",
+        "-af", "pan=mono|c0=c2,loudnorm=I=-16:TP=-1.5:LRA=11",
         "-acodec", "pcm_s16le",
         "-ar", "16000",
         str(output_audio)

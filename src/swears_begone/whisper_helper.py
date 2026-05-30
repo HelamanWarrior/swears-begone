@@ -41,7 +41,11 @@ def transcribe_wordlevel_audio(
     result = model.transcribe(audio, batch_size=batch_size, language=lang[:-1])
 
     # Align whisper timestamps
-    model_a, metadata = whisper.load_align_model(language_code=lang[:-1], device=device)
+    model_a, metadata = whisper.load_align_model(
+        language_code=lang[:-1], 
+        device=device, 
+        model_name="facebook/wav2vec2-large-robust-ft-swbd-300h"
+    )
     result = whisper.align(
         result["segments"], 
         model_a, 

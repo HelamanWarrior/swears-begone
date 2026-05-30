@@ -10,7 +10,17 @@ def load_model(model: str, device = None):
         model: Whisper model to use. (e.g., 'tiny', 'medium.en', 'large-v3', ...)
         device: Hardware device to run model on. ('cpu', 'cuda')
     """
-    return whisper.load_model(model, device=device, compute_type="float16")
+    vad_options = {
+        "vad_onset": 0.3,   # Lower = triggers speech detection easier
+        "vad_offset": 0.3   # Lower = holds onto the speech window longer before cutting
+    }
+
+    return whisper.load_model(model,
+        device=device,
+        compute_type="float16",
+        vad_options=vad_options,
+        asr_options={"condition_on_previous_text": False}
+    )
 
 def transcribe_wordlevel_audio(
     audio_file: str | Path,
@@ -26,14 +36,13 @@ def transcribe_wordlevel_audio(
         audio_file: Path to audio file to transcribe.
         model: Loaded Whisper model object
     """
+
     audio = whisper.load_audio(str(audio_file))
     result = model.transcribe(audio, batch_size=batch_size)
 
     # Align whisper timestamps
-    model_a, metadata = whisper.load_align_model(language_code=result["language"], device=device)
+    model_a, metadata = whisper.load_align_model(language_code=lang[:-1], device=device)
     result = whisper.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
-
-    print(result["segments"])
 
     return result
 

@@ -17,7 +17,7 @@ def transcribe_wordlevel_audio(
     model,
     lang: str,
     device = None,
-    batch_size: int = 1
+    batch_size: int = 16
 ) -> dict:
     """
     Uses Whisper to transcribe word-level audio of a preferred language.
@@ -32,9 +32,10 @@ def transcribe_wordlevel_audio(
         language=lang[:-1],
         vad_filter=True,
         vad_parameters=dict(
-            min_speech_duration_ms=250,
-            max_speech_duration_s=15,
-            min_silence_duration_ms=40
+            threshold=0.35,
+            min_speech_duration_ms=100,
+            min_silence_duration_ms=600,
+            speech_pad_ms=100
         ),
     )
     return result

@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swears-begone"
-version = "0.1.0"
+version = "0.2.0"
 description = "A CLI tool for filtering profanity from videos with Whisper"
 dependencies = [
-    "whisperx",
+    "faster-whisper",
     "srt>=3.5.0",
     "subliminal>=2.0.0"
 ]

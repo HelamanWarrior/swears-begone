@@ -1,6 +1,11 @@
 import re
 
-PUNCT = r'[.,\/#!$%\^&\*;:{}=\-_`~()!?\s\"\'’]'
+CLEAN_WORD_RE = re.compile(r'<[^>]+>|[^\w\s\-]')
+
+def _extract_clean_words(text: str) -> list[str]:
+    """Helper to strip tags/punctuation and split a string into lowercase words."""
+    cleaned = CLEAN_WORD_RE.sub('', text).lower()
+    return cleaned.split()
 
 def contains_any(text: str, items: list[str]) -> bool:
     """
@@ -13,8 +18,13 @@ def contains_any(text: str, items: list[str]) -> bool:
     Returns:
         True if any item is found within the text, False otherwise.
     """
-    pattern = r'(?:^|' + PUNCT + r')(' + '|'.join(re.escape(item) for item in items) + r')(?:$|' + PUNCT + r')'
-    return re.search(pattern, text, re.IGNORECASE) is not None
+    words_in_text = _extract_clean_words(text)
+
+    for word in words_in_text:
+        if word in items:
+            return True
+    
+    return False
 
 def replace_with_mapping(
     text: str,
@@ -35,19 +45,19 @@ def replace_with_mapping(
     """
     if not substitutions:
         return text
-    
-    # Sort by length (descending) to ensure that whole words are matched and not just partials
+
+    tokens = text.split(' ')
     sorted_keys = sorted(substitutions.keys(), key=len, reverse=True)
 
-    pattern = r'(^|' + PUNCT + r')(' + "|".join(re.escape(key) for key in sorted_keys) + r')($|' + PUNCT + r')'
+    for i, token in enumerate(tokens):
+        clean_word = CLEAN_WORD_RE.sub('', token).lower()
 
-    # Gets the replacement key value to the corresponding swear
-    def make_replacement(match):
-        prefix = match.group(1)
-        swear_word = match.group(2).lower()
-        suffix = match.group(3)
+        for key in sorted_keys: 
+            if key in clean_word:
+                replacement = substitutions[key] if substitutions[key] else default
 
-        replaced_word = substitutions.get(swear_word, default)
-        return f"{prefix}{replaced_word}{suffix}"
+                pattern = re.compile(re.escape(key), re.IGNORECASE)
+                tokens[i] = pattern.sub(replacement, token)
+                break
     
-    return re.sub(pattern, make_replacement, text, flags=re.IGNORECASE)
+    return ' '.join(tokens)

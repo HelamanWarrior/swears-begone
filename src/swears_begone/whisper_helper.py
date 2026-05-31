@@ -1,5 +1,5 @@
 from pathlib import Path
-import whisperx as whisper
+from faster_whisper import WhisperModel
 from swears_begone.search import contains_any
 
 def load_model(model: str, device = None):
@@ -10,24 +10,14 @@ def load_model(model: str, device = None):
         model: Whisper model to use. (e.g., 'tiny', 'medium.en', 'large-v3', ...)
         device: Hardware device to run model on. ('cpu', 'cuda')
     """
-    vad_options = {
-        "vad_onset": 0.15,   # Triggers speech detection easier
-        "vad_offset": 0.15   # Keeps the listening window wide open
-    }
-
-    return whisper.load_model(model,
-        device=device,
-        compute_type="float16",
-        vad_options=vad_options,
-        asr_options={"condition_on_previous_text": False}
-    )
+    return WhisperModel(model, device=device, compute_type="float16")
 
 def transcribe_wordlevel_audio(
     audio_file: str | Path,
     model,
     lang: str,
     device = None,
-    batch_size: int = 16
+    batch_size: int = 1
 ) -> dict:
     """
     Uses Whisper to transcribe word-level audio of a preferred language.
@@ -36,26 +26,7 @@ def transcribe_wordlevel_audio(
         audio_file: Path to audio file to transcribe.
         model: Loaded Whisper model object
     """
-
-    audio = whisper.load_audio(str(audio_file))
-    result = model.transcribe(audio, batch_size=batch_size, language=lang[:-1])
-
-    # Align whisper timestamps
-    model_a, metadata = whisper.load_align_model(
-        language_code=lang[:-1], 
-        device=device, 
-        model_name="facebook/wav2vec2-large-robust-ft-swbd-300h"
-    )
-    result = whisper.align(
-        result["segments"], 
-        model_a, 
-        metadata, 
-        audio, 
-        device, 
-        return_char_alignments=False, 
-        interpolate_method="linear",
-    )
-
+    result, info = model.transcribe(str(audio_file), word_timestamps=True, language=lang[:-1])
     return result
 
 def transcribe_swear_audio_segments(
@@ -101,7 +72,7 @@ def transcribe_swear_audio_segments(
     return all_detected_swears
 
 def parse_whisper_swear_timestamps(
-    transcript: dict,
+    raw_data,
     swears_list: list[str],
     padding: tuple = (0.05, 0.08)
 ) -> list[dict]:
@@ -116,17 +87,21 @@ def parse_whisper_swear_timestamps(
     Returns: 
         A list of dictionaries [{word, start, end, score}, ...]
     """
-    word_timestamps = []
 
-    for segment in transcript["segments"]:
-        for word in segment.get("words", []):
-            if not contains_any(word["word"], swears_list):
+    word_timestamps = []
+    segments = list(raw_data)
+    for segment in segments:
+        if not getattr(segment, "words", None):
+            continue
+
+        for word in segment.words:
+            if not contains_any(word.word, swears_list):
                 continue
+
             word_timestamps.append({
-                "word": word["word"],
-                "start": float(word["start"]) - padding[0],
-                "end": float(word["end"]) + padding[1],
-                "score": word["score"]
+                "word": word.word,
+                "start": float(word.start) - padding[0],
+                "end": float(word.end) + padding[1]
             })
     
     return word_timestamps

@@ -30,13 +30,8 @@ def transcribe_wordlevel_audio(
         str(audio_file), 
         word_timestamps=True, 
         language=lang[:-1],
-        vad_filter=True,
-        vad_parameters=dict(
-            threshold=0.35,
-            min_speech_duration_ms=100,
-            min_silence_duration_ms=600,
-            speech_pad_ms=100
-        ),
+        condition_on_previous_text=False,
+        initial_prompt="Damn, it's hot out here. Go to hell! Get this piece of shit moving, fuck!"
     )
     return result
 

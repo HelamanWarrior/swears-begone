@@ -26,7 +26,17 @@ def transcribe_wordlevel_audio(
         audio_file: Path to audio file to transcribe.
         model: Loaded Whisper model object
     """
-    result, info = model.transcribe(str(audio_file), word_timestamps=True, language=lang[:-1])
+    result, info = model.transcribe(
+        str(audio_file), 
+        word_timestamps=True, 
+        language=lang[:-1],
+        vad_filter=True,
+        vad_parameters=dict(
+            min_speech_duration_ms=250,
+            max_speech_duration_s=15,
+            min_silence_duration_ms=40
+        ),
+    )
     return result
 
 def transcribe_swear_audio_segments(

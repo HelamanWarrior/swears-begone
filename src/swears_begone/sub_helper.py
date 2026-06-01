@@ -35,18 +35,18 @@ def identify_dialogue_subs_channel(input_video: str | Path, lang: str) -> int:
     ]
 
     if not valid_text_subs:
-        print("- No text-based subtitles found. Skipping subtitle extraction.")
+        print(" • No text-based subtitles found. Skipping subtitle extraction.")
         return None
 
     preferred_lang_index = 0
-
     for stream in valid_text_subs:
         forced = stream['disposition']['forced'] == 1
 
         if stream['tags']['language'] == lang and not forced:
             preferred_lang_index = stream['index']
-            print(f"- Using subtitle index: {preferred_lang_index}")
             return preferred_lang_index
+    
+    return None
 
 def extract_embedded_subs(
     input_video: str | Path,
@@ -66,16 +66,17 @@ def extract_embedded_subs(
         Channel of extracted subtitle stream.
         -1 if no subtitle stream was detected.
     """
+    print("Analyzing Subtitles...")
     sub_channel = target_channel
 
     if sub_channel == -1:
-        print(f"Performing automatic subtitle detection for lang: {lang}")
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
+        print(f" • Language detected: {lang} (Index #{sub_channel})")
 
         if sub_channel is None:
-            print(f"- No subtitle channel found for preferred language.")
+            print(f" • No valid subtitles found for {lang}.")
             return -1
-
+    
     extract_subtitle_file(input_video, sub_channel, output_srt)
     return sub_channel
 
@@ -89,14 +90,14 @@ def resolve_subtitle_path(
     output_srt = tmp / Path(input_video).with_suffix(f".{lang}.srt")
 
     if external_sub:
-        print(f"Using external subtitle file: {external_sub}")
+        print(f" • Using external subtitle file: {external_sub}")
         return Path(external_sub)
     
     # Attempt extraction
     channel = extract_embedded_subs(input_video, output_srt, lang, target_channel)
 
     if channel == -1:
-        print("Embedded subs not found. Attempting download subtitles online...")
+        print(" • Embedded subs not found. Attempting download subtitles online...")
         output_srt = download_subtitle(input_video, lang, output_dir=tmp)
     
     if not output_srt.exists():
@@ -166,7 +167,6 @@ def find_swear_intervals(
             if contains_any(sub.content, swears_list):
                 swear_timestamps.append([str(sub.start), str(sub.end)])
     
-    print(f"Identified {len(swear_timestamps)} swears in subtitles!")
     return swear_timestamps
 
 def clean_subtitles(
@@ -221,7 +221,7 @@ def download_subtitle(
     if not subtitles.get(video):
         raise FileNotFoundError(f"No subtitles found for {video_path.name}")
     
-    print(f"- Subtitle search target: {video.title} ({video.year})")
+    print(f" • Subtitle search target: {video.title} ({video.year})")
 
     best_sub = subtitles[video][0]
     output_srt = video_path.with_suffix('.srt')

@@ -2,7 +2,7 @@ from pathlib import Path
 from faster_whisper import WhisperModel
 from swears_begone.search import contains_any
 
-def load_model(model: str, device = None):
+def load_model(model: str, device = None) -> WhisperModel:
     """
     Loads Whisper model into memory, ready for action!
 
@@ -14,11 +14,11 @@ def load_model(model: str, device = None):
 
 def transcribe_wordlevel_audio(
     audio_file: str | Path,
-    model,
+    model: WhisperModel,
     lang: str,
     device = None,
     batch_size: int = 16
-) -> dict:
+) -> tuple:
     """
     Uses Whisper to transcribe word-level audio of a preferred language.
 
@@ -26,7 +26,7 @@ def transcribe_wordlevel_audio(
         audio_file: Path to audio file to transcribe.
         model: Loaded Whisper model object
     """
-    result, info = model.transcribe(
+    result, _info = model.transcribe(
         str(audio_file), 
         word_timestamps=True, 
         language=lang[:-1],
@@ -47,21 +47,23 @@ def transcribe_swear_audio_segments(
     for any word contained in the swears_list.
 
     Args:
-        model: Loaded Whisper model object.
+        model: Loaded WhisperModel object.
         segments: A list of [start, end] timestamps in seconds.
         swears_list: list of strings to identify word-level timestamps for.
         lang: Language code (e.g., 'eng')
         audio_dir (str | Path): Directory containing the source audio files.
 
     Returns: 
-        A list of dictionaries, [{word, start, end, confidence}, ...]
+        A list of dictionaries, [{word, start, end}, ...]
     """
     all_detected_swears = []
+
+    print("Transcription & Verification:")
 
     for i, segment in enumerate(segments):
         audio_file = audio_dir / f"audio_{i}.wav"
         start_offset = segment[0]
-        print(f"Transcribing {audio_file}...")
+        print(f"  • [{start_offset} -> {segment[1]}]", end='')
 
         raw_data = transcribe_wordlevel_audio(audio_file, model, lang)
         word_timestamps = parse_whisper_swear_timestamps(raw_data, swears_list)
@@ -91,17 +93,18 @@ def parse_whisper_swear_timestamps(
         swears_list: A list of strings to identify word-level timestamps for.
     
     Returns: 
-        A list of dictionaries [{word, start, end, score}, ...]
+        A list of dictionaries [{word, start, end}, ...]
     """
-
     word_timestamps = []
     segments = list(raw_data)
+
     for segment in segments:
         if not getattr(segment, "words", None):
             continue
 
         for word in segment.words:
             if not contains_any(word.word, swears_list):
+                print('.', end='')
                 continue
 
             word_timestamps.append({
@@ -109,5 +112,7 @@ def parse_whisper_swear_timestamps(
                 "start": float(word.start) - padding[0],
                 "end": float(word.end) + padding[1]
             })
+            print('x', end="")
     
+    print()
     return word_timestamps

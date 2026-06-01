@@ -44,6 +44,7 @@ def main(
     
     # Save each audio segment
     swear_intervals = subs.parse_srt_time(srt_swear_intervals, padding=3)
+    print("\nProcessing Audio Segments...")
     ffmpeg.extract_audio_segments(input_video, swear_intervals, tmp)
 
     # Whisper identifies word-level timestamps for profanity
@@ -78,6 +79,7 @@ def main(
     # ----------------------------------------------------
     
     # Final step! Export the cleaned video file
+    print("\nExporting Sanitized Video...")
     ffmpeg.export_cleaned_video(
         input_video=input_video, 
         mute_segments=mute_segments, 
@@ -85,4 +87,5 @@ def main(
         embed_subs=embed_subs_file
     )
     
+    print("\n\u2714 Successfully sanitized. This video is now safe for Sunday School!")
     shutil.rmtree(tmp)

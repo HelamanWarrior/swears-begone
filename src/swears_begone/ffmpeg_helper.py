@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 
@@ -24,6 +25,15 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
         str(input_video)
     ])
     return subprocess.check_output(cmd)
+
+def total_duration(input_video: str | Path) -> float:
+    cmd = list(FFPROBE_BASE_CMD)
+    cmd.extend([
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(input_video)
+    ])
+    return float(subprocess.check_output(cmd))
 
 def extract_subtitle_file(
     input_video: str | Path, 
@@ -129,10 +139,17 @@ def extract_audio_segments(
         intervals (list): list of [start, stop] second interval lists.
         output_dir (str | Path): Path to the directory for extracted audio.
     """
-    interval_amount = len(intervals)
+    from swears_begone.cli import print_progress_bar
+
+    total_clips = len(intervals)
     for i, interval in enumerate(intervals):
         audio_file = Path(output_dir) / f"audio_{i}.wav"
-        print(f"\r- Extracting swear audio segments ({i + 1}/{interval_amount})", end='')
+
+        print_progress_bar(
+            iteration=i + 1, 
+            total=total_clips,
+            suffix=f"({i + 1}/{total_clips})"
+        )
 
         start, end = interval[0], interval[1]
         duration = end - start
@@ -173,7 +190,7 @@ def export_cleaned_video(
     output_video = path.parent.resolve() / f"{path.stem}-cleaned{video_container}"
     audio_info = detect_audio_info(input_video)
     
-    print(f"Exporting: {output_video}")
+    print(f" • Target: {output_video}")
 
     cmd = list(FFMPEG_BASE_CMD)
     cmd.extend(['-i', str(input_video)])
@@ -218,10 +235,51 @@ def export_cleaned_video(
             "-disposition:s:1", "0",
         ])
     
-    cmd.extend(["-filter:a:0", audio_filter, str(output_video)])
+    cmd.extend([
+        "-filter:a:0", audio_filter, 
+        "-progress", "pipe:1", "-nostats", 
+        str(output_video)
+    ])
 
-    subprocess.run(cmd, check=True)
-    print("\u2714 Successfully sanitized. This video is now safe for Sunday School!")
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    )
+
+    from swears_begone.cli import print_progress_bar
+    time_re = re.compile(r"out_time_us=(\d)+")
+    total_duration_secs = float(total_duration(input_video))
+
+    # Initialize progress bar at 0%
+    print_progress_bar(0, 100, suffix="0.0s")
+
+    try:
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break # Process finished
+            
+            match = time_re.match(line.strip())
+            if match:
+                current_time_secs = float(match.group(1)) / 1_000_000.0
+
+                percent = min((current_time_secs / total_duration_secs) * 100, 100.0)
+
+                print_progress_bar(
+                    iteration=int(percent),
+                    total=100,
+                    prefix="Rendering:",
+                    suffix=f"{current_time_secs:.1f}s / {total_duration_secs:.1f}s"
+                )
+    finally:
+        process.stdout.close()
+        process.wait()
+    
+    # Force progress bar to 100%
+    print_progress_bar(100, 100, prefix="Rendering:", suffix="Done!")
+
 
 def write_edl_file(mute_segments: dict[str, float | str], output_edl: str | Path) -> None:
     """

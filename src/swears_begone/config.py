@@ -2,7 +2,7 @@ LANGUAGE = "eng"
 SWEARS_FILE = None
 
 WHISPER_MODEL = "medium.en"
-WHISPER_DEVICE = "cuda"
+WHISPER_DEVICE = "auto"
 
 CREATE_EDL = False
 

@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from swears_begone import config
 from swears_begone.main import main as swears_begone
@@ -84,6 +85,35 @@ def main() -> None:
         embed_subs=args.embed_subs,
         export_edl=args.edl
     )
+
+def print_progress_bar(
+    iteration: int,
+    total: int,
+    prefix: str = '',
+    suffix: str = '',
+    length: int = 30,
+    fill: str = '#'
+) -> None:
+    """
+    Prints a dynamic terminal progress bar on a single line.
+    
+    Args:
+        iteration: Current progress step (int)
+        total: Total steps required (int)
+        prefix: Text to display before the bar (str)
+        suffix: Text to display after the bar (str)
+        length: Total character width of the progress bar itself (int)
+        fill: The character used to represent progress (str)
+    """
+    percent = f"{100 * (iteration / float(total)):.1f}"
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '─' * (length - filled_length)
+
+    sys.stdout.write(f'\r • {prefix} [{bar}] {percent}% {suffix}\033[K')
+    sys.stdout.flush()
+
+    if iteration == total:
+        print()
 
 if __name__ == "__main__":
     main()

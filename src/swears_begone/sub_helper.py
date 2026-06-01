@@ -71,11 +71,11 @@ def extract_embedded_subs(
 
     if sub_channel == -1:
         sub_channel = identify_dialogue_subs_channel(input_video, lang)
-        print(f" • Language detected: {lang} (Index #{sub_channel})")
 
         if sub_channel is None:
-            print(f" • No valid subtitles found for {lang}.")
             return -1
+
+        print(f" • Language detected: {lang} (Index #{sub_channel})")
     
     extract_subtitle_file(input_video, sub_channel, output_srt)
     return sub_channel
@@ -191,8 +191,9 @@ def clean_subtitles(
         subtitle_generator = srt.parse(f)
         subtitles = list(subtitle_generator)
 
+    clean_tool = replace_with_mapping(swear_dict, default="****")
     for sub in subtitles:
-        sub.content = replace_with_mapping(sub.content, swear_dict, "****")
+        sub.content = clean_tool(sub.content)
     
     with open(str(output_srt), 'w') as f:
         f.writelines(srt.compose(subtitles))
@@ -218,10 +219,9 @@ def download_subtitle(
     video = subliminal.scan_video(str(video_path))
     subtitles = subliminal.download_best_subtitles({video}, {Language(lang)})
 
+    print(f" • Subtitle search target: {video.title} ({video.year})")
     if not subtitles.get(video):
         raise FileNotFoundError(f"No subtitles found for {video_path.name}")
-    
-    print(f" • Subtitle search target: {video.title} ({video.year})")
 
     best_sub = subtitles[video][0]
     output_srt = video_path.with_suffix('.srt')

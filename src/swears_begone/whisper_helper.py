@@ -31,6 +31,7 @@ def transcribe_wordlevel_audio(
         word_timestamps=True, 
         language=lang[:-1],
         condition_on_previous_text=False,
+        temperature=0.0,
         initial_prompt="Damn, it's hot out here. Go to hell! Get this piece of shit moving, fuck!"
     )
     return result
@@ -63,7 +64,7 @@ def transcribe_swear_audio_segments(
     for i, segment in enumerate(segments):
         audio_file = audio_dir / f"audio_{i}.wav"
         start_offset = segment[0]
-        print(f"  • [{start_offset} -> {segment[1]}]", end='')
+        print(f" • [{start_offset:.2f} -> {segment[1]:.2f}]", end='')
 
         raw_data = transcribe_wordlevel_audio(audio_file, model, lang)
         word_timestamps = parse_whisper_swear_timestamps(raw_data, swears_list)

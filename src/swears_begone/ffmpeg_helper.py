@@ -26,7 +26,7 @@ def ffprobe_subs_metadata(input_video: str | Path) -> bytes:
     ])
     return subprocess.check_output(cmd)
 
-def total_duration(input_video: str | Path) -> float:
+def _total_duration(input_video: str | Path) -> float:
     cmd = list(FFPROBE_BASE_CMD)
     cmd.extend([
         "-show_entries", "format=duration",
@@ -113,7 +113,7 @@ def extract_audio_dialogue_file(
         if val is not None:
             seek_args.extend([flag, str(val)])
 
-    cmd = list(FFMPEG_BASE_CMD)
+    cmd = ["ffmpeg", "-y", "-v", "quiet"]
     cmd.extend(seek_args)
 
     cmd.extend([
@@ -236,35 +236,30 @@ def export_cleaned_video(
         ])
     
     cmd.extend([
-        "-filter:a:0", audio_filter, 
-        "-progress", "pipe:1", "-nostats", 
+        "-filter:a:0", audio_filter,
+        "-progress", "pipe:1", "-stats_period", "0.1", "-nostats", 
         str(output_video)
     ])
 
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
         text=True
     )
 
-    from swears_begone.cli import print_progress_bar
-    time_re = re.compile(r"out_time_us=(\d)+")
-    total_duration_secs = float(total_duration(input_video))
+    time_re = re.compile(r"out_time_us=(\d+)")
+    total_duration_secs = float(_total_duration(input_video))
 
     # Initialize progress bar at 0%
-    print_progress_bar(0, 100, suffix="0.0s")
+    from swears_begone.cli import print_progress_bar
+    print_progress_bar(0, 100, prefix="Rendering:", suffix="0.0s")
 
     try:
-        while True:
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                break # Process finished
-            
-            match = time_re.match(line.strip())
+        for line in process.stdout:
+            match = time_re.search(line)
             if match:
                 current_time_secs = float(match.group(1)) / 1_000_000.0
-
                 percent = min((current_time_secs / total_duration_secs) * 100, 100.0)
 
                 print_progress_bar(

@@ -1,11 +1,17 @@
 import re
 
-CLEAN_WORD_RE = re.compile(r'<[^>]+>|[^\w\s\-]')
+STRIP_TAGS_AND_PUNCT = re.compile(r'<[^>]+>|[^a-zA-Z0-9]')
 
 def _extract_clean_words(text: str) -> list[str]:
     """Helper to strip tags/punctuation and split a string into lowercase words."""
     cleaned = CLEAN_WORD_RE.sub('', text).lower()
     return cleaned.split()
+
+def match_regex(items: list[str]) -> re.compile:
+    sorted_items = sorted(items, key=len, reverse=True)
+    escaped_items = [re.escape(item) for item in sorted_items]
+    match_re = re.compile(rf"\b({'|'.join(escaped_items)})\b", re.IGNORECASE)
+    return match_re
 
 def contains_any(text: str, items: list[str]) -> bool:
     """
@@ -18,16 +24,9 @@ def contains_any(text: str, items: list[str]) -> bool:
     Returns:
         True if any item is found within the text, False otherwise.
     """
-    words_in_text = _extract_clean_words(text)
-
-    for word in words_in_text:
-        if word in items:
-            return True
-    
-    return False
+    return bool(match_regex(items).search(text.lower()))
 
 def replace_with_mapping(
-    text: str,
     substitutions: dict[str, str],
     default: str = ""
 ) -> str:
@@ -44,20 +43,13 @@ def replace_with_mapping(
         A string with substituted text applied.
     """
     if not substitutions:
-        return text
+        return lambda text: text
 
-    tokens = text.split(' ')
-    sorted_keys = sorted(substitutions.keys(), key=len, reverse=True)
+    pattern = match_regex(substitutions)
 
-    for i, token in enumerate(tokens):
-        clean_word = CLEAN_WORD_RE.sub('', token).lower()
+    def replace_match(match: re.Match) -> str:
+        matched_word = match.group(0).lower()
+        replacement = substitutions.get(matched_word)
+        return replacement if replacement else default
 
-        for key in sorted_keys: 
-            if key in clean_word:
-                replacement = substitutions[key] if substitutions[key] else default
-
-                pattern = re.compile(re.escape(key), re.IGNORECASE)
-                tokens[i] = pattern.sub(replacement, token)
-                break
-    
-    return ' '.join(tokens)
+    return lambda text: pattern.sub(replace_match, text)

@@ -1,9 +1,10 @@
 import os
 import sys
+import ctypes
 
 from swears_begone.cli import main
 
-def patch_cuda_paths():
+def patch_cuda_paths() -> None:
     """Dynamically add pip-installed NVIDIA libraries to the loading path."""
     if not sys.platform.startswith("linux"):
         return
@@ -14,23 +15,27 @@ def patch_cuda_paths():
     if hasattr(site, 'getusersitepackages'):
         paths.append(site.getusersitepackages())
     
-    cuda_libs = []
-    for base_path in paths:
-        # Check for the local nvidia libraries
-        cublas_path = os.path.join(base_path, "nvidia", "cublas", "lib")
-        cudnn_path = os.path.join(base_path, "nvidia", "cudnn", "lib")
+    target_subdirs = [
+        ("nvidia", "cublas", "lib"),
+        ("nvidia", "cudnn", "lib")
+    ]
 
-        if os.path.exists(cublas_path):
-            cuda_libs.append(cublas_path)
-        if os.path.exists(cudnn_path):
-            cuda_libs.append(cudnn_path)
-    
-    if cuda_libs:
-        # Safely prepend to existing LD_LIBRARY_PATH
-        existing = os.environ.get("LD_LIBRARY_PATH", "")
-        prefix = ":".join(cuda_libs)
-        os.environ["LD_LIBRARY_PATH"] = f"{prefix}:{existing}" if existing else prefix
+    for base_path in paths:
+        for subdir in target_subdirs:
+            lib_dir = os.path.join(base_path, *subdir)
+
+            if os.path.exists(lib_dir):
+                for filename in os.listdir(lib_dir):
+                    # Matches 'libcublas.so.X' or 'libcudnn.so.X'
+                    if filename.startswith("lib") and ".so" in filename:
+                        full_path = os.path.join(lib_dir, filename)
+                        try:
+                            # Load the binary globally in memory
+                            ctypes.CDLL(full_path, mode=ctypes.RTLD_GLOBAL)
+                        except Exception:
+                            pass
+
+patch_cuda_paths()
 
 if __name__ == "__main__":
-    patch_cuda_paths()
     main()

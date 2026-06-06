@@ -13,7 +13,7 @@ Currently an existing subtitle file must be attached to the video source. If not
 **swears-begone** requires **FFmpeg** to manage the video files.
 - **Ubuntu/Debian:** `sudo apt install ffmpeg`
 - **macOS:** `brew install ffmpeg`
-- **Windows:** Download from the official [FFmpeg site](https://ffmpeg.org/download.html#build-windows) and add its `/bin` folder to your System PATH.
+- **Windows:** Download from the official [FFmpeg site](https://ffmpeg.org/download.html) and add its `/bin` folder to your System PATH.
 
 ### 2. Setup Environment
 
@@ -34,7 +34,7 @@ source .venv/bin/activate  # Linux/macOS
 
 #### Option A: CPU Only (Simplest)
 
-If you do not have an NVIDIA GPU, or just want to run the tool on your processor, install the base package directly:
+If you do not have an NVIDIA GPU, install the base package directly:
 
 ```bash
 pip install .

@@ -22,4 +22,4 @@ cuda = [
 "swears_begone" = ["*.txt", "data/*.txt"]
 
 [project.scripts]
-swears-begone = "swears_begone.cli:main"
+swears-begone = "swears_begone.__main__:main"

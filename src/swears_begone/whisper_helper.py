@@ -1,6 +1,7 @@
 from pathlib import Path
 from faster_whisper import WhisperModel
 from swears_begone.search import contains_any
+from swears_begone.sub_helper import seconds_to_srt
 
 def load_model(model: str, device = None) -> WhisperModel:
     """
@@ -64,7 +65,10 @@ def transcribe_swear_audio_segments(
     for i, segment in enumerate(segments):
         audio_file = audio_dir / f"audio_{i}.wav"
         start_offset = segment[0]
-        print(f" • [{start_offset:.2f} -> {segment[1]:.2f}]", end='')
+
+        ts_start = seconds_to_srt(segment[0])
+        ts_end = seconds_to_srt(segment[1])
+        print(f" • [{ts_start}] -> [{ts_end}]", end='')
 
         raw_data = transcribe_wordlevel_audio(audio_file, model, lang)
         word_timestamps = parse_whisper_swear_timestamps(raw_data, swears_list)

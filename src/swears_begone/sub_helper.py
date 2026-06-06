@@ -105,6 +105,13 @@ def resolve_subtitle_path(
     
     return output_srt
 
+def seconds_to_srt(s: float) -> str:
+    s = int(s)
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
 def srt_to_seconds(timestamp: str) -> float:
     """
     Converts timestamp (str) from 'HH:MM:SS.mmm' (standard SubRip format) 

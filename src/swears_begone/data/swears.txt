@@ -52,6 +52,7 @@ asswad
 asswipe
 ass|bum
 badass|hardcore
+badasses|hardcores
 ballsack
 ballsacks
 bastards|jerks
@@ -102,6 +103,7 @@ butt-pirate
 buttfuck
 buttfucka
 buttfucker
+buttfucking
 buttfuckers
 buttfucks
 carpetmuncher
@@ -145,7 +147,6 @@ cockmonkey
 cockmuncher
 cocknose
 cocknugget
-cocks
 cockshit
 cocksmith
 cocksmoker
@@ -219,6 +220,7 @@ dickfucker
 dickhead
 dickheads
 dickhole
+dicking
 dickjuice
 dickless
 dicklick
@@ -440,6 +442,7 @@ fuckwhores
 fuckwit
 fuckwits
 fuckwitt
+fuckwitted
 fucky
 fuckya
 fuckyas
@@ -460,6 +463,8 @@ gaylord
 gaytard
 gaywad
 getthefuckout
+gism
+gismd
 God damn
 god damned
 god-damn
@@ -504,7 +509,10 @@ jackoffs
 jerk off
 jesus|moses
 jigaboo
+jizm
 jizz
+jizzed
+jizzing
 joyshit
 joyshits
 kickass
@@ -629,11 +637,14 @@ shitbag
 shitbagger
 shitbox
 shitboxes
+shitbrain
 shitbrains
+shitbrained
 shitbreath
 shitbug
 shitbugs
 shitcan
+shitcanned
 shitcans
 shitcunt
 shitdick

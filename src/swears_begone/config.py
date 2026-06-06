@@ -1,7 +1,7 @@
 LANGUAGE = "eng"
 SWEARS_FILE = None
 
-WHISPER_MODEL = "medium.en"
+WHISPER_MODEL = "large-v3"
 WHISPER_DEVICE = "auto"
 
 CREATE_EDL = False

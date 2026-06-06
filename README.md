@@ -2,6 +2,8 @@
 
 Remove profanity from any video file with the power of Whisper (a local speech-to-text model developed by OpenAI).
 
+![demonstration](img/swears-begone.gif)
+
 ## Approach
 
 Currently an existing subtitle file must be attached to the video source. If not present, the `subliminal` library attempts to download the best matching subtitle. With existing subtitles, the app detects time segments where swearing is present and processes only those segments with Whisper to retrieve precise timestamps; this dramatically increases the speed of swear detection and lowers VRAM usage.

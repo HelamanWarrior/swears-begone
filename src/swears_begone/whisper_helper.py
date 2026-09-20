@@ -1,3 +1,4 @@
+import ctranslate2
 from pathlib import Path
 from faster_whisper import WhisperModel
 from swears_begone.search import contains_any
@@ -11,7 +12,14 @@ def load_model(model: str, device = None) -> WhisperModel:
         model: Whisper model to use. (e.g., 'tiny', 'medium.en', 'large-v3', ...)
         device: Hardware device to run model on. ('cpu', 'cuda')
     """
-    return WhisperModel(model, device=device, compute_type="float16")
+    if device in (None, "auto"):
+        device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
+
+    compute_type = "int8" if device == "cpu" else "float16"
+    if device == "cpu":
+        compute_type = "int8"
+
+    return WhisperModel(model, device=device, compute_type=compute_type)
 
 def transcribe_wordlevel_audio(
     audio_file: str | Path,

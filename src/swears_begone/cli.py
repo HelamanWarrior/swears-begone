@@ -63,7 +63,8 @@ def main() -> None:
         default=config.WHISPER_DEVICE, 
         help='force Whisper to use the CPU backend device', 
         dest='device', 
-        action='store_true'
+        action='store_const',
+        const='cpu',
     )
     parser.add_argument(
         '--edl',

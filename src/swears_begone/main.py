@@ -25,6 +25,7 @@ def main(
     video_name = Path(input_video).stem
     video_dir = Path(input_video).parent.resolve()
     external_subs_path = video_dir / f"{video_name}-cleaned.{lang}.srt"
+    audio_channels = int(ffmpeg.detect_audio_info(input_video)['channels'])
 
     source_subs = subs.resolve_subtitle_path(
         input_video=input_video, 
@@ -45,7 +46,7 @@ def main(
     # Save each audio segment
     swear_intervals = subs.parse_srt_time(srt_swear_intervals, padding=3)
     print("\nProcessing Audio Segments...")
-    ffmpeg.extract_audio_segments(input_video, swear_intervals, tmp)
+    ffmpeg.extract_audio_segments(input_video, swear_intervals, tmp, channels=audio_channels)
 
     # Whisper identifies word-level timestamps for profanity
     model = whisper.load_model(model, device)

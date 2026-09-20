@@ -97,6 +97,7 @@ def extract_audio_dialogue_file(
     output_audio: str | Path,
     start: float | str = None,
     duration: float | str = None,
+    channels: int = 2,
 ) -> None:
     """
     Extracts audio from as video file, optionally within a specific time range.
@@ -116,10 +117,12 @@ def extract_audio_dialogue_file(
     cmd = ["ffmpeg", "-y", "-v", "quiet"]
     cmd.extend(seek_args)
 
+    af_filter = "pan=mono|c0=0.5*c0+0.5*c1" if channels <= 2 else "pan=mono|c0=c2,loudnorm=I=-16:TP=-1.5:LRA=11" 
+
     cmd.extend([
         "-i", str(input_video),
         "-map", "0:a:0",
-        "-af", "pan=mono|c0=c2,loudnorm=I=-16:TP=-1.5:LRA=11",
+        "-af", af_filter,
         "-acodec", "pcm_s16le",
         "-ar", "16000",
         str(output_audio)
@@ -129,7 +132,8 @@ def extract_audio_dialogue_file(
 def extract_audio_segments(
     input_video: str | Path, 
     intervals: list[float], 
-    output_dir: str | Path
+    output_dir: str | Path,
+    channels: int = 2
 ) -> None:
     """
     Extracts many audio segments from a video file, saving them into seperate audio files.
@@ -154,7 +158,7 @@ def extract_audio_segments(
         start, end = interval[0], interval[1]
         duration = end - start
         
-        extract_audio_dialogue_file(input_video, audio_file, start, duration)
+        extract_audio_dialogue_file(input_video, audio_file, start, duration, channels)
     print()
 
 def mute_filter(s: dict[str, float | str]) -> str:
